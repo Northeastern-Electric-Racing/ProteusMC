@@ -104,6 +104,8 @@ main=	cd	Secure && $(MAKE)
 #######################################
 clean:
 	-rm -fR $(EXEC)
+	cd ./CM4 && make clean
+	cd ./CM7 && make clean
   
 #######################################
 # dependencies
