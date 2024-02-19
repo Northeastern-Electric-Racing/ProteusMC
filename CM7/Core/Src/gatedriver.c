@@ -31,7 +31,7 @@ static void gatedrv_fault_cb(gatedriver_t* drv)
 
 }
 
-gatedriver_t* init_gatedriver()
+gatedriver_t* gatedrv_init()
 {
     //TODO: Assert hardware params
 	//assert(hi2c);

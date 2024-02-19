@@ -16,7 +16,7 @@ typedef struct {
 	I2C_HandleTypeDef* hi2c;
 } gatedriver_t;
 
-gatedriver_t* init_gatedrv(/*TODO: Pass hardware interfaces*/);
+gatedriver_t* gatedrv_init(/*TODO: Pass hardware interfaces*/);
 
 int16_t gatedrv_read_dc_voltage(gatedriver_t* drv);
 
