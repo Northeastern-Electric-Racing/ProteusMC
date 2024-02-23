@@ -51,7 +51,7 @@ extern "C" {
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
-void MX_HRTIM_Init(void);
+void MX_CRC_Init(void);
 
 /* USER CODE BEGIN EFP */
 
