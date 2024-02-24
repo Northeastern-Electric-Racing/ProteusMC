@@ -23,6 +23,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "proteus_config.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
