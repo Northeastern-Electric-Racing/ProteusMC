@@ -14,9 +14,11 @@ enum phase{
 
 typedef struct {
 	I2C_HandleTypeDef* hi2c;
+	TIM_HandleTypeDef* tim;	// timer associated with this PWM in this driver
+	uint32_t[] pulses;
 } gatedriver_t;
 
-gatedriver_t* gatedrv_init(/*TODO: Pass hardware interfaces*/);
+gatedriver_t* gatedrv_init();
 
 int16_t gatedrv_read_dc_voltage(gatedriver_t* drv);
 

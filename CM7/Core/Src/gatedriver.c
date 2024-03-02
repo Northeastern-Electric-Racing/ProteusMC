@@ -82,9 +82,56 @@ int16_t gatedrv_read_dc_current(gatedriver_t* drv)
 
 /* Note: This has to atomically write to ALL PWM registers */
 //TODO: mechanism for PWM synchronization
-int16_t gatedrv_write_pwm(gatedriver_t* drv)
+int16_t gatedrv_write_pwm(gatedriver_t* drv, uint32_t[] pulses)
 {
+	// Common configuration for all channels
+	TIM_OC_InitTypeDef PWMConfig;
+	PWMConfig.OCMode       = TIM_OCMODE_PWM1;
+	PWMConfig.OCPolarity   = TIM_OCPOLARITY_HIGH;
+	PWMConfig.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
+	PWMConfig.OCIdleState  = TIM_OCIDLESTATE_SET;
+	PWMConfig.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+	PWMConfig.OCFastMode   = TIM_OCFAST_DISABLE;
 
+	// Attempting to set channel 1
+	PWMConfig.Pulse = pulse[0];
+	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_1) != HAL_OK)
+	{
+		// do nothing and return
+		return;
+	}
+
+	// Attempting to set channel 2
+	PWMConfig.Pulse = pulse[1];
+	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_2) != HAL_OK)
+	{
+		// attempt to revert last channel change and return
+		PWMConfig.Pulse = drv->pulses[0];
+		HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_1);
+
+		return;
+	}
+
+	// Attempting to set channel 3
+	PWMConfig.Pulse = pulse[2];
+	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_3) != HAL_OK)
+	{
+		// attempt to revert previous channel changes and return
+		PWMConfig.Pulse = drv->pulses[0];
+		HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_1);
+
+		PWMConfig.Pulse = drv->pulses[1];
+		HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_2);
+
+		return;
+	}
+
+	// successful PWM modifications - save configuration and return
+	drv->pulses[0] = pulses[0];
+	drv->pulses[1] = pulses[1];
+	drv->pulses[2] = pulses[2];
+
+	return;
 }
 
 int16_t gatedrv_read_igbt_temp(gatedriver_t* drv)
