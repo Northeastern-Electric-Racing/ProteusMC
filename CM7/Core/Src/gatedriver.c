@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define  PERIOD_VALUE		(uint32_t)(2000 - 1)
+
 //TODO: Look up STM callback func pointer for ADCs
 static void gatedrv_current_adc_cb(gatedriver_t* drv)
 {
@@ -31,10 +33,11 @@ static void gatedrv_fault_cb(gatedriver_t* drv)
 
 }
 
-gatedriver_t* gatedrv_init()
+gatedriver_t* gatedrv_init(I2C_HandleTypeDef* hi2c, TIM_HandleTypeDef* tim)
 {
     //TODO: Assert hardware params
-	//assert(hi2c);
+	assert(hi2c);
+	assert(tim);
 	//assert(accel_adc1);
 	//assert(accel_adc2);
 	//assert(brake_adc);
@@ -46,14 +49,20 @@ gatedriver_t* gatedrv_init()
 	assert(gatedriver);
 
     //TODO: Set interfaces
-	//mpu->hi2c		   = hi2c;
-	//mpu->accel_adc1	   = accel_adc1;
+	gatedriver->hi2c		= hi2c;
+	gatedriver->tim			= tim;
 	//mpu->accel_adc2	   = accel_adc2;
 	//mpu->brake_adc	   = brake_adc;
 	//mpu->led_gpio	   = led_gpio;
 	//mpu->watchdog_gpio = watchdog_gpio;
 
     //TODO: Init hardware
+	tim->Init.Prescaler			= 0;
+	tim->Init.Period			= PERIOD_VALUE;
+	tim->Init.ClockDivision		= 0;
+	tim->Init.CounterMode		= TIM_COUNTERMODE_UP;
+	tim->Init.RepetitionCounter	= 0;
+
 	/* Initialize the Onboard Temperature Sensor */
 	//mpu->temp_sensor = malloc(sizeof(sht30_t));
 	//assert(mpu->temp_sensor);
@@ -81,9 +90,14 @@ int16_t gatedrv_read_dc_current(gatedriver_t* drv)
 }
 
 /* Note: This has to atomically write to ALL PWM registers */
-//TODO: mechanism for PWM synchronization
-int16_t gatedrv_write_pwm(gatedriver_t* drv, uint32_t pulses[])
+int16_t gatedrv_write_pwm(gatedriver_t* drv, float dutyCycles[])
 {
+	// computing pulses
+	uint32_t pulses[3];
+	pulses[0] = (uint32_t) (dutyCycles[0] * PERIOD_VALUE / 100);
+	pulses[1] = (uint32_t) (dutyCycles[1] * PERIOD_VALUE / 100);
+	pulses[2] = (uint32_t) (dutyCycles[2] * PERIOD_VALUE / 100);
+
 	// Common configuration for all channels
 	TIM_OC_InitTypeDef PWMConfig;
 	PWMConfig.OCMode       = TIM_OCMODE_PWM1;
