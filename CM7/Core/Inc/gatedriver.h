@@ -15,7 +15,7 @@ enum phase{
 typedef struct {
 	I2C_HandleTypeDef* hi2c;
 	TIM_HandleTypeDef* tim;	// timer associated with this PWM in this driver
-	uint32_t[] pulses;
+	uint32_t pulses[];
 } gatedriver_t;
 
 gatedriver_t* gatedrv_init();
@@ -26,7 +26,7 @@ int16_t gatedrv_read_dc_current(gatedriver_t* drv);
 
 /* Note: This has to atomically write to ALL PWM registers */
 //TODO: mechanism for PWM synchronization
-int16_t gatedrv_write_pwm(gatedriver_t* drv);
+int16_t gatedrv_write_pwm(gatedriver_t* drv, uint32_t pulses[]);
 
 int16_t gatedrv_read_igbt_temp(gatedriver_t* drv);
 

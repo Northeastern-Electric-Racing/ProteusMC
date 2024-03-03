@@ -82,7 +82,7 @@ int16_t gatedrv_read_dc_current(gatedriver_t* drv)
 
 /* Note: This has to atomically write to ALL PWM registers */
 //TODO: mechanism for PWM synchronization
-int16_t gatedrv_write_pwm(gatedriver_t* drv, uint32_t[] pulses)
+int16_t gatedrv_write_pwm(gatedriver_t* drv, uint32_t pulses[])
 {
 	// Common configuration for all channels
 	TIM_OC_InitTypeDef PWMConfig;
@@ -94,26 +94,26 @@ int16_t gatedrv_write_pwm(gatedriver_t* drv, uint32_t[] pulses)
 	PWMConfig.OCFastMode   = TIM_OCFAST_DISABLE;
 
 	// Attempting to set channel 1
-	PWMConfig.Pulse = pulse[0];
+	PWMConfig.Pulse = pulses[0];
 	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_1) != HAL_OK)
 	{
 		// do nothing and return
-		return;
+		return 1;
 	}
 
 	// Attempting to set channel 2
-	PWMConfig.Pulse = pulse[1];
+	PWMConfig.Pulse = pulses[1];
 	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_2) != HAL_OK)
 	{
 		// attempt to revert last channel change and return
 		PWMConfig.Pulse = drv->pulses[0];
 		HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_1);
 
-		return;
+		return 1;
 	}
 
 	// Attempting to set channel 3
-	PWMConfig.Pulse = pulse[2];
+	PWMConfig.Pulse = pulses[2];
 	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_3) != HAL_OK)
 	{
 		// attempt to revert previous channel changes and return
@@ -123,7 +123,7 @@ int16_t gatedrv_write_pwm(gatedriver_t* drv, uint32_t[] pulses)
 		PWMConfig.Pulse = drv->pulses[1];
 		HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_2);
 
-		return;
+		return 1;
 	}
 
 	// successful PWM modifications - save configuration and return
@@ -131,7 +131,7 @@ int16_t gatedrv_write_pwm(gatedriver_t* drv, uint32_t[] pulses)
 	drv->pulses[1] = pulses[1];
 	drv->pulses[2] = pulses[2];
 
-	return;
+	return 0;
 }
 
 int16_t gatedrv_read_igbt_temp(gatedriver_t* drv)
