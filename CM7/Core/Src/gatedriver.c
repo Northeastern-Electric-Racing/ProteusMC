@@ -33,30 +33,19 @@ static void gatedrv_fault_cb(gatedriver_t* drv)
 
 }
 
-gatedriver_t* gatedrv_init(I2C_HandleTypeDef* hi2c, TIM_HandleTypeDef* tim)
+gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim)
 {
-    //TODO: Assert hardware params
-	assert(hi2c);
+	/* Assert hardware params */
 	assert(tim);
-	//assert(accel_adc1);
-	//assert(accel_adc2);
-	//assert(brake_adc);
-	//assert(led_gpio);
-	//assert(watchdog_gpio);
 
 	/* Create MPU struct */
 	gatedriver_t* gatedriver = malloc(sizeof(gatedriver_t));
 	assert(gatedriver);
 
-    //TODO: Set interfaces
-	gatedriver->hi2c		= hi2c;
+	/* Set interfaces */
 	gatedriver->tim			= tim;
-	//mpu->accel_adc2	   = accel_adc2;
-	//mpu->brake_adc	   = brake_adc;
-	//mpu->led_gpio	   = led_gpio;
-	//mpu->watchdog_gpio = watchdog_gpio;
-
-    //TODO: Init hardware
+	
+	/* Init hardware */
 	tim->Init.Prescaler			= 0;
 	tim->Init.Period			= PERIOD_VALUE;
 	tim->Init.ClockDivision		= 0;
@@ -69,12 +58,12 @@ gatedriver_t* gatedrv_init(I2C_HandleTypeDef* hi2c, TIM_HandleTypeDef* tim)
 	//mpu->temp_sensor->i2c_handle = hi2c;
 	//assert(!sht30_init(mpu->temp_sensor)); /* This is always connected */
 
-    //TODO: Init Mutexes
+	//TODO: Init Mutexes
 	/* Create Mutexes */
 	//mpu->i2c_mutex = osMutexNew(&mpu_i2c_mutex_attr);
 	//assert(mpu->i2c_mutex);
 
-    //TODO: Link interrupts to callbacks
+	//TODO: Link interrupts to callbacks
 
 	return gatedriver;
 }
@@ -90,15 +79,15 @@ int16_t gatedrv_read_dc_current(gatedriver_t* drv)
 }
 
 /* Note: This has to atomically write to ALL PWM registers */
-int16_t gatedrv_write_pwm(gatedriver_t* drv, float dutyCycles[])
+int16_t gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[])
 {
-	// computing pulses
+	/* Computing pulses */
 	uint32_t pulses[3];
-	pulses[0] = (uint32_t) (dutyCycles[0] * PERIOD_VALUE / 100);
-	pulses[1] = (uint32_t) (dutyCycles[1] * PERIOD_VALUE / 100);
-	pulses[2] = (uint32_t) (dutyCycles[2] * PERIOD_VALUE / 100);
+	pulses[0] = (uint32_t) (duty_cycles[0] * PERIOD_VALUE / 100);
+	pulses[1] = (uint32_t) (duty_cycles[1] * PERIOD_VALUE / 100);
+	pulses[2] = (uint32_t) (duty_cycles[2] * PERIOD_VALUE / 100);
 
-	// Common configuration for all channels
+	/* Common configuration for all channels */
 	TIM_OC_InitTypeDef PWMConfig;
 	PWMConfig.OCMode       = TIM_OCMODE_PWM1;
 	PWMConfig.OCPolarity   = TIM_OCPOLARITY_HIGH;
@@ -107,30 +96,30 @@ int16_t gatedrv_write_pwm(gatedriver_t* drv, float dutyCycles[])
 	PWMConfig.OCNIdleState = TIM_OCNIDLESTATE_RESET;
 	PWMConfig.OCFastMode   = TIM_OCFAST_DISABLE;
 
-	// Attempting to set channel 1
+	/* Attempting to set channel 1 */
 	PWMConfig.Pulse = pulses[0];
 	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_1) != HAL_OK)
 	{
-		// do nothing and return
+		/* Do nothing and return */
 		return 1;
 	}
 
-	// Attempting to set channel 2
+	/* Attempting to set channel 2 */
 	PWMConfig.Pulse = pulses[1];
 	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_2) != HAL_OK)
 	{
-		// attempt to revert last channel change and return
+		/* Attempt to revert last channel change and return */
 		PWMConfig.Pulse = drv->pulses[0];
 		HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_1);
 
 		return 1;
 	}
 
-	// Attempting to set channel 3
+	/* Attempting to set channel 3 */
 	PWMConfig.Pulse = pulses[2];
 	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_3) != HAL_OK)
 	{
-		// attempt to revert previous channel changes and return
+		/* attempt to revert previous channel changes and return */
 		PWMConfig.Pulse = drv->pulses[0];
 		HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_1);
 
@@ -140,7 +129,7 @@ int16_t gatedrv_write_pwm(gatedriver_t* drv, float dutyCycles[])
 		return 1;
 	}
 
-	// successful PWM modifications - save configuration and return
+	/* successful PWM modifications - save configuration and return */
 	drv->pulses[0] = pulses[0];
 	drv->pulses[1] = pulses[1];
 	drv->pulses[2] = pulses[2];

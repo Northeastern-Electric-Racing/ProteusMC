@@ -13,12 +13,11 @@ enum phase{
 };
 
 typedef struct {
-	I2C_HandleTypeDef* hi2c;
 	TIM_HandleTypeDef* tim;
 	uint32_t pulses[];
 } gatedriver_t;
 
-gatedriver_t* gatedrv_init(I2C_HandleTypeDef* hi2c, TIM_HandleTypeDef* tim);
+gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim);
 
 int16_t gatedrv_read_dc_voltage(gatedriver_t* drv);
 
@@ -26,7 +25,7 @@ int16_t gatedrv_read_dc_current(gatedriver_t* drv);
 
 /* Note: This has to atomically write to ALL PWM registers */
 //TODO: mechanism for PWM synchronization
-int16_t gatedrv_write_pwm(gatedriver_t* drv, float pulses[]);
+int16_t gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[]);
 
 int16_t gatedrv_read_igbt_temp(gatedriver_t* drv);
 
