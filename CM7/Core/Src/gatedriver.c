@@ -51,6 +51,17 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim)
 	tim->Init.ClockDivision		= 0;
 	tim->Init.CounterMode		= TIM_COUNTERMODE_UP;
 	tim->Init.RepetitionCounter	= 0;
+	// TODO add start pwm call
+
+	/* Common configuration for all PWM channels */
+	TIM_OC_InitTypeDef PWMConfig;
+	PWMConfig.OCMode       = TIM_OCMODE_PWM1;
+	PWMConfig.OCPolarity   = TIM_OCPOLARITY_HIGH;
+	PWMConfig.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
+	PWMConfig.OCIdleState  = TIM_OCIDLESTATE_SET;
+	PWMConfig.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+	PWMConfig.OCFastMode   = TIM_OCFAST_DISABLE;
+	gatedriver->pPWMConfig = &PWMConfig;
 
 	/* Initialize the Onboard Temperature Sensor */
 	//mpu->temp_sensor = malloc(sizeof(sht30_t));
@@ -87,44 +98,38 @@ int16_t gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[])
 	pulses[1] = (uint32_t) (duty_cycles[1] * PERIOD_VALUE / 100);
 	pulses[2] = (uint32_t) (duty_cycles[2] * PERIOD_VALUE / 100);
 
-	/* Common configuration for all channels */
-	TIM_OC_InitTypeDef PWMConfig;
-	PWMConfig.OCMode       = TIM_OCMODE_PWM1;
-	PWMConfig.OCPolarity   = TIM_OCPOLARITY_HIGH;
-	PWMConfig.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
-	PWMConfig.OCIdleState  = TIM_OCIDLESTATE_SET;
-	PWMConfig.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-	PWMConfig.OCFastMode   = TIM_OCFAST_DISABLE;
-
+	/* Getting PWM channel config */
+	TIM_OC_InitTypeDef* config = drv->pPWMConfig;
+	
 	/* Attempting to set channel 1 */
-	PWMConfig.Pulse = pulses[0];
-	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_1) != HAL_OK)
+	config->Pulse = pulses[0];
+	if(HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_1) != HAL_OK)
 	{
 		/* Do nothing and return */
 		return 1;
 	}
 
 	/* Attempting to set channel 2 */
-	PWMConfig.Pulse = pulses[1];
-	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_2) != HAL_OK)
+	config->Pulse = pulses[1];
+	if(HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_2) != HAL_OK)
 	{
 		/* Attempt to revert last channel change and return */
-		PWMConfig.Pulse = drv->pulses[0];
-		HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_1);
+		config->Pulse = drv->pulses[0];
+		HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_1);
 
 		return 1;
 	}
 
 	/* Attempting to set channel 3 */
-	PWMConfig.Pulse = pulses[2];
-	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_3) != HAL_OK)
+	config->Pulse = pulses[2];
+	if(HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_3) != HAL_OK)
 	{
 		/* attempt to revert previous channel changes and return */
-		PWMConfig.Pulse = drv->pulses[0];
-		HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_1);
+		config->Pulse = drv->pulses[0];
+		HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_1);
 
-		PWMConfig.Pulse = drv->pulses[1];
-		HAL_TIM_PWM_ConfigChannel(drv->tim, &PWMConfig, TIM_CHANNEL_2);
+		config->Pulse = drv->pulses[1];
+		HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_2);
 
 		return 1;
 	}
