@@ -14,6 +14,7 @@ enum phase{
 
 typedef struct {
 	TIM_HandleTypeDef* tim;
+    osMutexId_t* tim_mutex;
     TIM_OC_InitTypeDef* pPWMConfig;
 	uint32_t pulses[];
 } gatedriver_t;

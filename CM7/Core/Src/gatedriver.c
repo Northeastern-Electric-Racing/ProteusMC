@@ -7,6 +7,8 @@
 
 #define  PERIOD_VALUE		(uint32_t)(2000 - 1)
 
+const static osMutexAttr_t gatedrv_tim_mutex_attr;
+
 //TODO: Look up STM callback func pointer for ADCs
 static void gatedrv_current_adc_cb(gatedriver_t* drv)
 {
@@ -51,7 +53,9 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim)
 	tim->Init.ClockDivision		= 0;
 	tim->Init.CounterMode		= TIM_COUNTERMODE_UP;
 	tim->Init.RepetitionCounter	= 0;
-	// TODO add start pwm call
+	if(HAL_TIM_PWM_Init(&tim) != HAL_OK) {
+		// TODO: how to handle this error?
+	}
 
 	/* Common configuration for all PWM channels */
 	TIM_OC_InitTypeDef PWMConfig;
@@ -63,16 +67,9 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim)
 	PWMConfig.OCFastMode   = TIM_OCFAST_DISABLE;
 	gatedriver->pPWMConfig = &PWMConfig;
 
-	/* Initialize the Onboard Temperature Sensor */
-	//mpu->temp_sensor = malloc(sizeof(sht30_t));
-	//assert(mpu->temp_sensor);
-	//mpu->temp_sensor->i2c_handle = hi2c;
-	//assert(!sht30_init(mpu->temp_sensor)); /* This is always connected */
-
-	//TODO: Init Mutexes
 	/* Create Mutexes */
-	//mpu->i2c_mutex = osMutexNew(&mpu_i2c_mutex_attr);
-	//assert(mpu->i2c_mutex);
+	gatedriver->tim_mutex = osMutexNew(&gatedrv_tim_mutex_attr);
+	assert(gatedriver->tim_mutex);
 
 	//TODO: Link interrupts to callbacks
 
@@ -92,6 +89,12 @@ int16_t gatedrv_read_dc_current(gatedriver_t* drv)
 /* Note: This has to atomically write to ALL PWM registers */
 int16_t gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[])
 {
+	/* Acquiring mutex lock */
+	osStatus_t mut_stat = osMutexAcquire(drv->tim_mutex, osWaitForever);
+	if (mut_stat) {
+		return mut_stat;
+	}
+
 	/* Computing pulses */
 	uint32_t pulses[3];
 	pulses[0] = (uint32_t) (duty_cycles[0] * PERIOD_VALUE / 100);
@@ -124,7 +127,7 @@ int16_t gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[])
 	config->Pulse = pulses[2];
 	if(HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_3) != HAL_OK)
 	{
-		/* attempt to revert previous channel changes and return */
+		/* Attempt to revert previous channel changes and return */
 		config->Pulse = drv->pulses[0];
 		HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_1);
 
@@ -134,11 +137,12 @@ int16_t gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[])
 		return 1;
 	}
 
-	/* successful PWM modifications - save configuration and return */
+	/* Successful PWM modifications - save configuration, release mutex, and return */
 	drv->pulses[0] = pulses[0];
 	drv->pulses[1] = pulses[1];
 	drv->pulses[2] = pulses[2];
 
+	osMutexRelease(drv->tim_mutex);
 	return 0;
 }
 
