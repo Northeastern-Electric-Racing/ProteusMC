@@ -53,7 +53,7 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim)
 	tim->Init.ClockDivision		= 0;
 	tim->Init.CounterMode		= TIM_COUNTERMODE_UP;
 	tim->Init.RepetitionCounter	= 0;
-	if(HAL_TIM_PWM_Init(&tim) != HAL_OK) {
+	if(HAL_TIM_PWM_Init(tim) != HAL_OK) {
 		// TODO: how to handle this error?
 	}
 
