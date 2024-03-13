@@ -1,4 +1,6 @@
 #include "foc_ctrl.h"
+#include <stdlib.h>
+#include <assert.h>
 
 #define INBOUND_QUEUE_SIZE  15
 
