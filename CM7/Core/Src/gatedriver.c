@@ -46,17 +46,17 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, 
 	assert(HAL_TIM_PWM_Init(tim) != HAL_OK);
 
 	/* Common configuration for all PWM channels */
-	TIM_OC_InitTypeDef PWMConfig;
-	PWMConfig.OCMode       = TIM_OCMODE_PWM1;
-	PWMConfig.OCPolarity   = TIM_OCPOLARITY_HIGH;
-	PWMConfig.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
-	PWMConfig.OCIdleState  = TIM_OCIDLESTATE_SET;
-	PWMConfig.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-	PWMConfig.OCFastMode   = TIM_OCFAST_DISABLE;
-	gatedriver->pPWMConfig = &PWMConfig;
+	TIM_OC_InitTypeDef pwm_cfg;
+	pwm_cfg.OCMode       = TIM_OCMODE_PWM1;
+	pwm_cfg.OCPolarity   = TIM_OCPOLARITY_HIGH;
+	pwm_cfg.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
+	pwm_cfg.OCIdleState  = TIM_OCIDLESTATE_SET;
+	pwm_cfg.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+	pwm_cfg.OCFastMode   = TIM_OCFAST_DISABLE;
+	gatedriver->pwm_cfg = &pwm_cfg;
 
 	/* Configure DMA */
-	assert(HAL_ADC_Start_DMA(gatedriver->hdma_adc, &gatedriver->intern_adc_buffer, ADC_BUF_LEN));
+	assert(HAL_ADC_Start_DMA(gatedriver->hdma_adc, gatedriver->intern_adc_buffer, MAX_ADC_BUF));
 
 	/* Create Mutexes */
 	gatedriver->tim_mutex = osMutexNew(&gatedriver->tim_mutex_attr);
@@ -70,10 +70,10 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, 
 
 void gatedrv_get_phase_currents(gatedriver_t* drv, int16_t current_buf[])
 {
-	// TODO: Figure out what data is where in the DMA
-	// current_buf[U] = drv->mem[0] << X
-	// current_buf[V] = drv->mem
-	// current_buf[W] = drv->mem
+	//TODO: Ensure the ADC DMA is mapped the same across boards
+	current_buf[PHASE_U] = drv->intern_adc_buffer[0];
+	current_buf[PHASE_V] = drv->intern_adc_buffer[1];
+	current_buf[PHASE_W] = drv->intern_adc_buffer[2];
 }
 
 int16_t gatedrv_read_dc_voltage(gatedriver_t* drv)
@@ -102,7 +102,7 @@ int16_t gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[])
 	pulses[2] = (uint32_t) (duty_cycles[2] * PERIOD_VALUE / 100);
 
 	/* Getting PWM channel config */
-	TIM_OC_InitTypeDef* config = drv->pPWMConfig;
+	TIM_OC_InitTypeDef* config = drv->pwm_cfg;
 
 	/* Attempting to set channel 1 */
 	config->Pulse = pulses[0];

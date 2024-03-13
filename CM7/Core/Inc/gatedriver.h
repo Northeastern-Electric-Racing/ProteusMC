@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define ADC_BUF_LEN     4
+#define MAX_ADC_BUF 7
 
 enum {
     PHASE_U,
@@ -19,12 +19,12 @@ enum {
 typedef struct {
 	TIM_HandleTypeDef* tim;
     osMutexId_t* tim_mutex;
-    TIM_OC_InitTypeDef* pPWMConfig;
+    TIM_OC_InitTypeDef* pwm_cfg;
 	uint32_t pulses[NUM_PHASES];
 
     ADC_HandleTypeDef *hdma_adc;
 	SPI_HandleTypeDef *adc_spi;
-    uint32_t intern_adc_buffer[ADC_BUF_LEN];
+    uint32_t intern_adc_buffer[MAX_ADC_BUF];
 
     osMutexId_t* tim_mutex_mutex;
     osMutexAttr_t tim_mutex_attr;
