@@ -7,8 +7,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MAX_ADC_BUF 7
-
 /*
  * Note that these phases readings should ALWAYS be mapped to the corresponding indices
  * Ensure the ADC DMA is mapped the same across boards
@@ -23,7 +21,7 @@ enum {
 enum {
     GATEDRV_DC_CURRENT = GATEDRV_NUM_PHASES, /* Keep index rolling from phase enum */
     GATEDRV_IGBT_TEMP,
-    SIZE_OF_ADC_DMA
+    GATEDRV_SIZE_OF_ADC_DMA
 };
 
 /* Definition of gatedriver struct */
@@ -35,7 +33,7 @@ typedef struct {
 
     ADC_HandleTypeDef *hdma_adc;
 	SPI_HandleTypeDef *adc_spi;
-    uint32_t intern_adc_buffer[SIZE_OF_ADC_DMA];
+    uint32_t intern_adc_buffer[GATEDRV_SIZE_OF_ADC_DMA];
 
     osMutexId_t* tim_mutex_mutex;
     osMutexAttr_t tim_mutex_attr;

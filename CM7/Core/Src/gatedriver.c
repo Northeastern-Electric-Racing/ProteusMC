@@ -56,7 +56,7 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, 
 	gatedriver->pwm_cfg = &pwm_cfg;
 
 	/* Configure DMA */
-	assert(HAL_ADC_Start_DMA(gatedriver->hdma_adc, gatedriver->intern_adc_buffer, MAX_ADC_BUF));
+	assert(HAL_ADC_Start_DMA(gatedriver->hdma_adc, gatedriver->intern_adc_buffer, GATEDRV_SIZE_OF_ADC_DMA));
 
 	/* Create Mutexes */
 	gatedriver->tim_mutex = osMutexNew(&gatedriver->tim_mutex_attr);
