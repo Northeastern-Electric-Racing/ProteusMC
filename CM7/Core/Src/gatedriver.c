@@ -68,12 +68,11 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, 
 	return gatedriver;
 }
 
-void gatedrv_get_phase_currents(gatedriver_t* drv, int16_t current_buf[])
+void gatedrv_get_phase_currents(gatedriver_t* drv, int16_t current_buf[GATEDRV_NUM_PHASES])
 {
-	//TODO: Ensure the ADC DMA is mapped the same across boards
-	current_buf[PHASE_U] = drv->intern_adc_buffer[0];
-	current_buf[PHASE_V] = drv->intern_adc_buffer[1];
-	current_buf[PHASE_W] = drv->intern_adc_buffer[2];
+	current_buf[GATEDRV_PHASE_U] = drv->intern_adc_buffer[GATEDRV_PHASE_U];
+	current_buf[GATEDRV_PHASE_V] = drv->intern_adc_buffer[GATEDRV_PHASE_V];
+	current_buf[GATEDRV_PHASE_W] = drv->intern_adc_buffer[GATEDRV_PHASE_W];
 }
 
 int16_t gatedrv_read_dc_voltage(gatedriver_t* drv)
@@ -87,7 +86,7 @@ int16_t gatedrv_read_dc_current(gatedriver_t* drv)
 }
 
 /* Note: This has to atomically write to ALL PWM registers */
-int16_t gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[])
+int16_t gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[GATEDRV_NUM_PHASES])
 {
 	/* Acquiring mutex lock */
 	osStatus_t mut_stat = osMutexAcquire(drv->tim_mutex, osWaitForever);
