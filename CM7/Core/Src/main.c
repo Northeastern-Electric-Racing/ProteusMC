@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 
 #include "proteus_config.h"
+#include "gatedriver.h"
 
 /* USER CODE END Includes */
 
@@ -184,7 +185,10 @@ Error_Handler();
   osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
+  //lmao we aren't adding mutexes here but need to init stuff after the kernel initializes
+
+  gatedriver_t *gatedrv_left = gatedrv_init(&htim1, &hadc1, &hspi1);
+  gatedriver_t *gatedrv_right = gatedrv_init(&htim2, &hadc3, &hspi3);
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
