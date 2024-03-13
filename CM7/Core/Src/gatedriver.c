@@ -21,7 +21,7 @@ static void gatedrv_fault_cb(gatedriver_t* drv)
 
 }
 
-gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, DMA_HandleTypeDef *hdma_adc, SPI_HandleTypeDef *adc_spi)
+gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, SPI_HandleTypeDef *adc_spi)
 {
 	/* Assert hardware params */
 	assert(tim);

@@ -22,7 +22,7 @@ typedef struct {
     TIM_OC_InitTypeDef* pPWMConfig;
 	uint32_t pulses[NUM_PHASES];
 
-    DMA_HandleTypeDef *hdma_adc;
+    ADC_HandleTypeDef *hdma_adc;
 	SPI_HandleTypeDef *adc_spi;
     uint32_t intern_adc_buffer[ADC_BUF_LEN];
 
@@ -32,7 +32,7 @@ typedef struct {
     osMutexAttr_t ext_adc_mutex_attr;
 } gatedriver_t;
 
-gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, DMA_HandleTypeDef *hdma_adc, SPI_HandleTypeDef *adc_spi);
+gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, SPI_HandleTypeDef *adc_spi);
 
 int16_t gatedrv_read_dc_voltage(gatedriver_t* drv);
 
