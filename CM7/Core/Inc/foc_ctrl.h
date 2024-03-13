@@ -7,11 +7,11 @@
 
 /* Struct to contain parameters for field oriented control */
 typedef struct {
-    osThreadId_t foc_ctrl;
-    osMessageQueueId_t data_queue;
+	osThreadId_t foc_ctrl;
+	osMessageQueueId_t data_queue;
 
-    /* Note that phase actor task should hang on this for new command */
-    osMessageQueueId_t command_queue;
+	/* Note that phase actor task should hang on this for new command */
+	osMessageQueueId_t command_queue;
 } foc_ctrl_t;
 
 foc_ctrl_t *foc_ctrl_init();
