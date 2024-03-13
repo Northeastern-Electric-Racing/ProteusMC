@@ -25,6 +25,9 @@ osStatus_t foc_queue_frame(foc_ctrl_t *controller, int16_t phase_currents[3])
 
 osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, int16_t duty_cycles[3])
 {
+	if (!controller->command_queue)
+		return -1;
+
 	return osMessageQueueGet(controller->command_queue, duty_cycles, NULL, osWaitForever);
 }
 
