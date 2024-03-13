@@ -2,7 +2,7 @@
 
 #define INBOUND_QUEUE_SIZE  15
 
-foc_ctrl_t *init_foc_ctrl()
+foc_ctrl_t *foc_ctrl_init()
 {
     /* Create FOC struct */
 	foc_ctrl_t* controller = malloc(sizeof(foc_ctrl_t));
@@ -13,14 +13,17 @@ foc_ctrl_t *init_foc_ctrl()
     return controller;
 }
 
-int8_t queue_frame(foc_ctrl_t *controller, int16_t phase_currents[3])
+osStatus_t foc_queue_frame(foc_ctrl_t *controller, int16_t phase_currents[3])
 {
     if (!controller->data_queue)
 		return -1;
 
-	osMessageQueuePut(controller->data_queue, phase_currents, 0U, 0U);
+	return osMessageQueuePut(controller->data_queue, phase_currents, 0U, 0U);
+}
 
-	return 0;
+osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, int16_t duty_cycles[3])
+{
+    return osMessageQueueGet(controller->command_queue, duty_cycles, NULL, osWaitForever);
 }
 
 void vFOCctrl(void* pv_params)

@@ -14,10 +14,13 @@ typedef struct {
     osMessageQueueId_t command_queue;
 } foc_ctrl_t;
 
-foc_ctrl_t *init_foc_ctrl();
+foc_ctrl_t *foc_ctrl_init();
 
 /* Enqueue a single frame of controller observation */
-int8_t queue_frame(foc_ctrl_t *controller, int16_t phase_currents[3]);
+osStatus_t foc_queue_frame(foc_ctrl_t *controller, int16_t phase_currents[3]);
+
+/* Wait for a command to be sent from the controller */
+osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, int16_t duty_cycles[3]);
 
 const osThreadAttr_t foc_ctrl_attributes = {
 	.name		= "FOC Controller",
