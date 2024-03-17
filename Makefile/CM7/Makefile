@@ -42,7 +42,6 @@ C_SOURCES =  \
 ../../CM7/Core/Src/stm32h7xx_hal_msp.c \
 ../../CM7/Core/Src/gatedriver.c \
 ../../CM7/Core/Src/foc_ctrl.c \
-../../CM7/Core/Src/fault.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc_ex.c \
