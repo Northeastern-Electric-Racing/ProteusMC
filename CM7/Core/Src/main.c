@@ -25,6 +25,7 @@
 
 #include "proteus_config.h"
 #include "gatedriver.h"
+#include "ssi_encoder.h"
 
 /* USER CODE END Includes */
 
@@ -189,6 +190,9 @@ Error_Handler();
 
   gatedriver_t *gatedrv_left = gatedrv_init(&htim1, &hadc1, &hspi1);
   gatedriver_t *gatedrv_right = gatedrv_init(&htim2, &hadc3, &hspi3);
+
+  ssi_encoder_t *ssi_encoder_left = ssi_encoder_init(&hspi2);
+  ssi_encoder_t *ssi_encoder_right = ssi_encoder_init(&hspi4);
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
