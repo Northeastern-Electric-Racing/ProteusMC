@@ -6,7 +6,17 @@
 // TODO: add actual list of states
 typedef enum
 {
-    BOOT,
+    IDLE_START,
+    CHARGE_BOOT_CAP,
+    OFFSET_CALIB,
+    CLEAR,
+    START,
+    SWITCH_OVER,
+    START_RUN,
+    RUN,
+    ANY_STOP,
+    STOP_IDLE,
+    FAULT_NOW,
     MAX_FUNC_STATES
 } state_t;
 
