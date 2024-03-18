@@ -37,7 +37,7 @@ state_t get_state()
 
 void vStateMachineDirector(void *pv_params)
 {
-    cerberus_state = BOOT;
+    cerberus_state = IDLE_START;
 
     state_trans_queue = osMessageQueueNew(STATE_TRANS_QUEUE_SIZE, sizeof(state_t), NULL);
 
