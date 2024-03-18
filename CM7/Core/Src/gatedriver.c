@@ -46,14 +46,12 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, 
 	assert(HAL_TIM_PWM_Init(tim) != HAL_OK);
 
 	/* Common configuration for all PWM channels */
-	TIM_OC_InitTypeDef pwm_cfg;
-	pwm_cfg.OCMode       = TIM_OCMODE_PWM1;
-	pwm_cfg.OCPolarity   = TIM_OCPOLARITY_HIGH;
-	pwm_cfg.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
-	pwm_cfg.OCIdleState  = TIM_OCIDLESTATE_SET;
-	pwm_cfg.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-	pwm_cfg.OCFastMode   = TIM_OCFAST_DISABLE;
-	gatedriver->pwm_cfg = &pwm_cfg;
+	gatedriver->pwm_cfg.OCMode       = TIM_OCMODE_PWM1;
+	gatedriver->pwm_cfg.OCPolarity   = TIM_OCPOLARITY_HIGH;
+	gatedriver->pwm_cfg.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
+	gatedriver->pwm_cfg.OCIdleState  = TIM_OCIDLESTATE_SET;
+	gatedriver->pwm_cfg.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+	gatedriver->pwm_cfg.OCFastMode   = TIM_OCFAST_DISABLE;
 
 	/* Configure DMA */
 	assert(HAL_ADC_Start_DMA(gatedriver->hdma_adc, gatedriver->intern_adc_buffer, GATEDRV_SIZE_OF_ADC_DMA));
@@ -101,37 +99,37 @@ int16_t gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[GATEDRV_NUM_PHASE
 	pulses[2] = (uint32_t) (duty_cycles[2] * PERIOD_VALUE / 100);
 
 	/* Getting PWM channel config */
-	TIM_OC_InitTypeDef* config = drv->pwm_cfg;
+	TIM_OC_InitTypeDef config = drv->pwm_cfg;
 
 	/* Attempting to set channel 1 */
-	config->Pulse = pulses[0];
-	if(HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_1) != HAL_OK)
+	config.Pulse = pulses[0];
+	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &config, TIM_CHANNEL_1) != HAL_OK)
 	{
 		/* Do nothing and return */
 		return 1;
 	}
 
 	/* Attempting to set channel 2 */
-	config->Pulse = pulses[1];
-	if(HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_2) != HAL_OK)
+	config.Pulse = pulses[1];
+	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &config, TIM_CHANNEL_2) != HAL_OK)
 	{
 		/* Attempt to revert last channel change and return */
-		config->Pulse = drv->pulses[0];
-		HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_1);
+		config.Pulse = drv->pulses[0];
+		HAL_TIM_PWM_ConfigChannel(drv->tim, &config, TIM_CHANNEL_1);
 
 		return 1;
 	}
 
 	/* Attempting to set channel 3 */
-	config->Pulse = pulses[2];
-	if(HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_3) != HAL_OK)
+	config.Pulse = pulses[2];
+	if(HAL_TIM_PWM_ConfigChannel(drv->tim, &config, TIM_CHANNEL_3) != HAL_OK)
 	{
 		/* Attempt to revert previous channel changes and return */
-		config->Pulse = drv->pulses[0];
-		HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_1);
+		config.Pulse = drv->pulses[0];
+		HAL_TIM_PWM_ConfigChannel(drv->tim, &config, TIM_CHANNEL_1);
 
-		config->Pulse = drv->pulses[1];
-		HAL_TIM_PWM_ConfigChannel(drv->tim, config, TIM_CHANNEL_2);
+		config.Pulse = drv->pulses[1];
+		HAL_TIM_PWM_ConfigChannel(drv->tim, &config, TIM_CHANNEL_2);
 
 		return 1;
 	}
