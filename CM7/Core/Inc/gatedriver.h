@@ -28,7 +28,7 @@ enum {
 typedef struct {
 	TIM_HandleTypeDef* tim;
     osMutexId_t* tim_mutex;
-    TIM_OC_InitTypeDef* pwm_cfg;
+    TIM_OC_InitTypeDef pwm_cfg;
 	uint32_t pulses[GATEDRV_NUM_PHASES];
 
     ADC_HandleTypeDef *hdma_adc;
