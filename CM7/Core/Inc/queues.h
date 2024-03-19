@@ -7,7 +7,7 @@
 #define PHASE_CURRENT_QUEUE_SIZE    8
 
 typedef struct {
-    uint32_t current[NUM_PHASES];
+    uint32_t current[GATEDRV_NUM_PHASES];
 } phase_current_t;
 
 extern osMessageQueueId_t phase_current_queue;
