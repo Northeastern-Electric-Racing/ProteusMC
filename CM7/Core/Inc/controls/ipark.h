@@ -61,7 +61,7 @@ extern "C"
 #ifdef __TMS320C28XX_CLA__
 #include "libraries/math/include/CLAmath.h"
 #else
-#include "libraries/math/include/math.h"
+#include <stdint.h>
 #include <math.h>
 #endif // __TMS320C28XX_CLA__
 
@@ -72,9 +72,9 @@ extern "C"
 //*****************************************************************************
 typedef struct _IPARK_Obj_
 {
-    float32_t sinTh;    //!< the sine of the angle between the d,q and the alpha,
+    float sinTh;    //!< the sine of the angle between the d,q and the alpha,
                       //!< beta coordinate systems
-    float32_t cosTh;    //!< the cosine of the angle between the d,q and the
+    float cosTh;    //!< the cosine of the angle between the d,q and the
                       //!< alpha, beta coordinate systems
 } IPARK_Obj;
 
@@ -95,7 +95,7 @@ typedef struct _IPARK_Obj_  *IPARK_Handle;
 //! \return    The cosine of the angle
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 IPARK_getCosTh(IPARK_Handle handle)
 {
     IPARK_Obj *obj = (IPARK_Obj *)handle;
@@ -115,12 +115,12 @@ IPARK_getCosTh(IPARK_Handle handle)
 //
 //*****************************************************************************
 static inline void
-IPARK_getPhasor(IPARK_Handle handle, MATH_Vec2 *pPhasor)
+IPARK_getPhasor(IPARK_Handle handle, float pPhasor[2])
 {
     IPARK_Obj *obj = (IPARK_Obj *)handle;
 
-    pPhasor->value[0] = obj->cosTh;
-    pPhasor->value[1] = obj->sinTh;
+    pPhasor[0] = obj->cosTh;
+    pPhasor[1] = obj->sinTh;
 
     return;
 } // end of IPARK_getPhasor() function
@@ -135,7 +135,7 @@ IPARK_getPhasor(IPARK_Handle handle, MATH_Vec2 *pPhasor)
 //! return     The sine of the angle
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 IPARK_getSinTh(IPARK_Handle handle)
 {
     IPARK_Obj *obj = (IPARK_Obj *)handle;
@@ -179,18 +179,18 @@ cla_IPARK_init(void *pMemory, const size_t numBytes);
 #endif // __TMS320C28XX_CLA__
 
 static inline void
-IPARK_run(IPARK_Handle handle, const MATH_Vec2 *pInVec, MATH_Vec2 *pOutVec)
+IPARK_run(IPARK_Handle handle, const float pInVec[2], float pOutVec[2])
 {
     IPARK_Obj *obj = (IPARK_Obj *)handle;
 
-    float32_t sinTh = obj->sinTh;
-    float32_t cosTh = obj->cosTh;
+    float sinTh = obj->sinTh;
+    float cosTh = obj->cosTh;
 
-    float32_t value_0 = pInVec->value[0];
-    float32_t value_1 = pInVec->value[1];
+    float value_0 = pInVec[0];
+    float value_1 = pInVec[1];
 
-    pOutVec->value[0] = (value_0 * cosTh) - (value_1 * sinTh);
-    pOutVec->value[1] = (value_1 * cosTh) + (value_0 * sinTh);
+    pOutVec[0] = (value_0 * cosTh) - (value_1 * sinTh);
+    pOutVec[1] = (value_1 * cosTh) + (value_0 * sinTh);
 
     return;
 } // end of IPARK_run() function
@@ -208,7 +208,7 @@ IPARK_run(IPARK_Handle handle, const MATH_Vec2 *pInVec, MATH_Vec2 *pOutVec)
 //
 //*****************************************************************************
 static inline void
-IPARK_setCosTh(IPARK_Handle handle, const float32_t cosTh)
+IPARK_setCosTh(IPARK_Handle handle, const float cosTh)
 {
     IPARK_Obj *obj = (IPARK_Obj *)handle;
 
@@ -229,12 +229,12 @@ IPARK_setCosTh(IPARK_Handle handle, const float32_t cosTh)
 //
 //*****************************************************************************
 static inline void
-IPARK_setPhasor(IPARK_Handle handle, const MATH_Vec2 *pPhasor)
+IPARK_setPhasor(IPARK_Handle handle, const float pPhasor[2])
 {
     IPARK_Obj *obj = (IPARK_Obj *)handle;
 
-    obj->cosTh = pPhasor->value[0];
-    obj->sinTh = pPhasor->value[1];
+    obj->cosTh = pPhasor[0];
+    obj->sinTh = pPhasor[1];
 
     return;
 } // end of IPARK_setPhasor() function
@@ -252,7 +252,7 @@ IPARK_setPhasor(IPARK_Handle handle, const MATH_Vec2 *pPhasor)
 //
 //*****************************************************************************
 static inline void
-IPARK_setSinTh(IPARK_Handle handle, const float32_t sinTh)
+IPARK_setSinTh(IPARK_Handle handle, const float sinTh)
 {
     IPARK_Obj *obj = (IPARK_Obj *)handle;
 
@@ -274,7 +274,7 @@ IPARK_setSinTh(IPARK_Handle handle, const float32_t sinTh)
 //
 //*****************************************************************************
 static inline void
-IPARK_setup(IPARK_Handle handle, const float32_t Th)
+IPARK_setup(IPARK_Handle handle, const float Th)
 {
     IPARK_Obj *obj = (IPARK_Obj *)handle;
 
