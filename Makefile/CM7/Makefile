@@ -148,7 +148,6 @@ C_DEFS =  \
 # AS includes
 AS_INCLUDES =  \
 -I../../CM7/Core/Inc
--I../../CM7/Core/Inc/controls
 
 # C includes
 C_INCLUDES =  \
@@ -160,7 +159,8 @@ C_INCLUDES =  \
 -I../../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 \
 -I../../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F \
 -I../../Drivers/CMSIS/Device/ST/STM32H7xx/Include \
--I../../Drivers/CMSIS/Include
+-I../../Drivers/CMSIS/Include \
+-I../../CM7/Core/Inc/controls
 
 
 # compile gcc flags

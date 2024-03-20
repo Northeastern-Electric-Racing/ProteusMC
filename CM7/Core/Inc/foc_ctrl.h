@@ -3,16 +3,16 @@
 
 #include <stdint.h>
 #include "cmsis_os.h"
-#include "gatedriver.h"
+#include "clarke.h"
 
 /* Struct to contain parameters for field oriented control */
 typedef struct
 {
     osThreadId_t foc_ctrl;
     osMessageQueueId_t data_queue;
-
-    /* Note that phase actor task should hang on this for new command */
     osMessageQueueId_t command_queue;
+
+    CLARKE_Obj *clarke_transform;
 } foc_ctrl_t;
 
 foc_ctrl_t *foc_ctrl_init();
