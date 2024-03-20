@@ -28,6 +28,11 @@ foc_ctrl_t *foc_ctrl_init()
     CLARKE_setNumSensors(controller->clarke_transform, NUM_CURRENT_SENSORS);
     CLARKE_setScaleFactors(controller->clarke_transform, CLARKE_ALPHA, CLARKE_BETA);
 
+    /* Initialize Park Transform */
+    controller->park_transform = malloc(sizeof(PARK_Obj));
+    assert(controller->park_transform);
+    PARK_setup(controller->park_transform, 2.0); //TODO: What is "Th"
+
     return controller;
 }
 
@@ -53,6 +58,7 @@ void vFOCctrl(void *pv_params)
 
     int16_t phase_buf[3];
     float phase_currents[3];
+    float alpha_beta[2];
     float id_iq[2];
     int16_t calc_cmd[3];
 
@@ -66,7 +72,10 @@ void vFOCctrl(void *pv_params)
         if (status == osOK)
         {
             //TODO: Convert raw ADC reading of phases to current values
-            CLARKE_run(controller->clarke_transform, phase_currents, id_iq);
+            CLARKE_run(controller->clarke_transform, phase_currents, alpha_beta);
+            PARK_run(controller->park_transform, alpha_beta, id_iq);
+            //TODO: Add PI controller for both d and q
+
 
             /* Publish to Onboard Temp Queue */
             osMessageQueuePut(controller->command_queue, calc_cmd, 0U, 0U);
