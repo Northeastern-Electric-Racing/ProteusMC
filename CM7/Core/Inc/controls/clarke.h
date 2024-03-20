@@ -58,7 +58,8 @@ extern "C"
 //
 //*****************************************************************************
 
-#include "libraries/math/include/math.h"
+#include <stdint.h>
+#include <math.h>
 
 //*****************************************************************************
 //
@@ -67,8 +68,8 @@ extern "C"
 //*****************************************************************************
 typedef struct _CLARKE_Obj_
 {
-    float32_t alpha_sf;           //!< the scale factor for the alpha component
-    float32_t beta_sf;            //!< the scale factor for the beta component
+    float alpha_sf;           //!< the scale factor for the alpha component
+    float beta_sf;            //!< the scale factor for the beta component
     uint_least8_t numSensors;     //!< the number of sensors
 } CLARKE_Obj;
 
@@ -132,14 +133,14 @@ cla_CLARKE_init(void *pMemory, const size_t numBytes);
 //
 //*****************************************************************************
 static inline void
-CLARKE_run(CLARKE_Handle handle, const MATH_Vec3 *pInVec, MATH_Vec2 *pOutVec)
+CLARKE_run(CLARKE_Handle handle, const float pInVec[3], float pOutVec[2])
 {
     CLARKE_Obj *obj = (CLARKE_Obj *)handle;
 
     uint_least8_t numSensors = obj->numSensors;
 
-    float32_t alpha_sf = obj->alpha_sf;
-    float32_t beta_sf = obj->beta_sf;
+    float alpha_sf = obj->alpha_sf;
+    float beta_sf = obj->beta_sf;
 
     //
     // Perform the Clarke transform for either 2 or 3 sensor setups
@@ -148,19 +149,17 @@ CLARKE_run(CLARKE_Handle handle, const MATH_Vec3 *pInVec, MATH_Vec2 *pOutVec)
     {
         // alpha_sf = MATH_ONE_OVER_THREE = 1/3
         // beta_sf  = MATH_ONE_OVER_SQRT_THREE = 1/sqrt(3)
-        pOutVec->value[0] = ((pInVec->value[0] * (float32_t)2.0f) -
-                             (pInVec->value[1] + pInVec->value[2])) * alpha_sf;
+        pOutVec[0] = ((pInVec[0] * (float)2.0f) - (pInVec[1] + pInVec[2])) * alpha_sf;
 
-        pOutVec->value[1] = (pInVec->value[1] - pInVec->value[2]) * beta_sf;
+        pOutVec[1] = (pInVec[1] - pInVec[2]) * beta_sf;
     }
     else if(numSensors == 2)
     {
         // alpha_sf = 1.0
         // beta_sf  = MATH_ONE_OVER_SQRT_THREE = 1/sqrt(3)
-        pOutVec->value[0] = pInVec->value[0] * alpha_sf;
+        pOutVec[0] = pInVec[0] * alpha_sf;
 
-        pOutVec->value[1] = (pInVec->value[0] +
-                             (pInVec->value[1] * (float32_t)2.0f)) * beta_sf;
+        pOutVec[1] = (pInVec[0] + (pInVec[1] * (float)2.0f)) * beta_sf;
     }
 
     return;
@@ -180,22 +179,21 @@ CLARKE_run(CLARKE_Handle handle, const MATH_Vec3 *pInVec, MATH_Vec2 *pOutVec)
 //
 //*****************************************************************************
 static inline void
-CLARKE_run_threeInput(CLARKE_Handle handle, const MATH_Vec3 *pInVec, MATH_Vec2 *pOutVec)
+CLARKE_run_threeInput(CLARKE_Handle handle, const float pInVec[3], float pOutVec[2])
 {
     CLARKE_Obj *obj = (CLARKE_Obj *)handle;
 
-    float32_t alpha_sf = obj->alpha_sf;
-    float32_t beta_sf = obj->beta_sf;
+    float alpha_sf = obj->alpha_sf;
+    float beta_sf = obj->beta_sf;
 
     //
     // Perform the Clarke transform for either 2 or 3 sensor setups
     //
     // alpha_sf = MATH_ONE_OVER_THREE = 1/3
     // beta_sf  = MATH_ONE_OVER_SQRT_THREE = 1/sqrt(3)
-    pOutVec->value[0] = ((pInVec->value[0] * (float32_t)2.0f) -
-                         (pInVec->value[1] + pInVec->value[2])) * alpha_sf;
+    pOutVec[0] = ((pInVec[0] * (float)2.0f) - (pInVec[1] + pInVec[2])) * alpha_sf;
 
-    pOutVec->value[1] = (pInVec->value[1] - pInVec->value[2]) * beta_sf;
+    pOutVec[1] = (pInVec[1] - pInVec[2]) * beta_sf;
 
     return;
 } // end of CLARKE_run() function
@@ -215,18 +213,17 @@ CLARKE_run_threeInput(CLARKE_Handle handle, const MATH_Vec3 *pInVec, MATH_Vec2 *
 //
 //*****************************************************************************
 static inline void
-CLARKE_run_twoInput(CLARKE_Handle handle, const MATH_Vec2 *pInVec,
-                    MATH_Vec2 *pOutVec)
+CLARKE_run_twoInput(CLARKE_Handle handle, const float pInVec[2],
+                    float pOutVec[2])
 {
     CLARKE_Obj *obj = (CLARKE_Obj *)handle;
 
-    float32_t beta_sf = obj->beta_sf;
+    float beta_sf = obj->beta_sf;
 
     // beta_sf = MATH_ONE_OVER_SQRT_THREE = 1/sqrt(3)
-    pOutVec->value[0] = pInVec->value[0];
+    pOutVec[0] = pInVec[0];
 
-    pOutVec->value[1] = (pInVec->value[0] +
-                         (pInVec->value[1] * (float32_t)2.0)) * beta_sf;
+    pOutVec[1] = (pInVec[0] + (pInVec[1] * (float)2.0)) * beta_sf;
 
     return;
 } // end of CLARKE_run_twoInput() function
@@ -266,8 +263,8 @@ CLARKE_setNumSensors(CLARKE_Handle handle, const uint_least8_t numSensors)
 //
 //*****************************************************************************
 static inline void
-CLARKE_setScaleFactors(CLARKE_Handle handle, const float32_t alpha_sf,
-                       const float32_t beta_sf)
+CLARKE_setScaleFactors(CLARKE_Handle handle, const float alpha_sf,
+                       const float beta_sf)
 {
     CLARKE_Obj *obj = (CLARKE_Obj *)handle;
 
