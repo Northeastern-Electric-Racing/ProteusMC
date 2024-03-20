@@ -61,7 +61,7 @@ extern "C"
 #ifdef __TMS320C28XX_CLA__
 #include "libraries/math/include/CLAmath.h"
 #else
-#include "libraries/math/include/math.h"
+#include <stdint.h>
 #include <math.h>
 #endif // __TMS320C28XX_CLA__
 
@@ -73,9 +73,9 @@ extern "C"
 //*****************************************************************************
 typedef struct _PARK_Obj_
 {
-    float32_t sinTh;     //!< the sine of the angle between the d,q and the
+    float sinTh;     //!< the sine of the angle between the d,q and the
                        //!< alpha, beta coordinate systems
-    float32_t cosTh;     //!< the cosine of the angle between the d,q and the
+    float cosTh;     //!< the cosine of the angle between the d,q and the
                        //!< alpha, beta coordinate systems
 } PARK_Obj;
 
@@ -96,7 +96,7 @@ typedef struct _PARK_Obj_ *PARK_Handle;
 //! \return    The cosine of the angle
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 PARK_getCosTh(PARK_Handle handle)
 {
     PARK_Obj *obj = (PARK_Obj *)handle;
@@ -116,12 +116,12 @@ PARK_getCosTh(PARK_Handle handle)
 //
 //*****************************************************************************
 static inline void
-PARK_getPhasor(PARK_Handle handle, MATH_Vec2 *pPhasor)
+PARK_getPhasor(PARK_Handle handle, float pPhasor[2])
 {
     PARK_Obj *obj = (PARK_Obj *)handle;
 
-    pPhasor->value[0] = obj->cosTh;
-    pPhasor->value[1] = obj->sinTh;
+    pPhasor[0] = obj->cosTh;
+    pPhasor[1] = obj->sinTh;
 
     return;
 } // end of PARK_getPhasor() function
@@ -136,7 +136,7 @@ PARK_getPhasor(PARK_Handle handle, MATH_Vec2 *pPhasor)
 //! \return    The sine of the angle
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 PARK_getSinTh(PARK_Handle handle)
 {
     PARK_Obj *obj = (PARK_Obj *)handle;
@@ -180,18 +180,18 @@ cla_PARK_init(void *pMemory, const size_t numBytes);
 #endif
 
 static inline void
-PARK_run(PARK_Handle handle, const MATH_Vec2 *pInVec, MATH_Vec2 *pOutVec)
+PARK_run(PARK_Handle handle, const float pInVec[2], float pOutVec[2])
 {
     PARK_Obj *obj = (PARK_Obj *)handle;
 
-    float32_t sinTh = obj->sinTh;
-    float32_t cosTh = obj->cosTh;
+    float sinTh = obj->sinTh;
+    float cosTh = obj->cosTh;
 
-    float32_t value_0 = pInVec->value[0];
-    float32_t value_1 = pInVec->value[1];
+    float value_0 = pInVec[0];
+    float value_1 = pInVec[1];
 
-    pOutVec->value[0] = (value_0 * cosTh) + (value_1 * sinTh);
-    pOutVec->value[1] = (value_1 * cosTh) - (value_0 * sinTh);
+    pOutVec[0] = (value_0 * cosTh) + (value_1 * sinTh);
+    pOutVec[1] = (value_1 * cosTh) - (value_0 * sinTh);
 
     return;
 } // end of PARK_run() function
@@ -209,7 +209,7 @@ PARK_run(PARK_Handle handle, const MATH_Vec2 *pInVec, MATH_Vec2 *pOutVec)
 //
 //*****************************************************************************
 static inline void
-PARK_setCosTh(PARK_Handle handle, const float32_t cosTh)
+PARK_setCosTh(PARK_Handle handle, const float cosTh)
 {
     PARK_Obj *obj = (PARK_Obj *)handle;
 
@@ -230,12 +230,12 @@ PARK_setCosTh(PARK_Handle handle, const float32_t cosTh)
 //
 //*****************************************************************************
 static inline void
-PARK_setPhasor(PARK_Handle handle, const MATH_Vec2 *pPhasor)
+PARK_setPhasor(PARK_Handle handle, const float pPhasor[2])
 {
     PARK_Obj *obj = (PARK_Obj *)handle;
 
-    obj->cosTh = pPhasor->value[0];
-    obj->sinTh = pPhasor->value[1];
+    obj->cosTh = pPhasor[0];
+    obj->sinTh = pPhasor[1];
 
     return;
 } // end of PARK_setPhasor() function
@@ -253,7 +253,7 @@ PARK_setPhasor(PARK_Handle handle, const MATH_Vec2 *pPhasor)
 //
 //*****************************************************************************
 static inline void
-PARK_setSinTh(PARK_Handle handle, const float32_t sinTh)
+PARK_setSinTh(PARK_Handle handle, const float sinTh)
 {
     PARK_Obj *obj = (PARK_Obj *)handle;
 
@@ -279,7 +279,7 @@ PARK_setSinTh(PARK_Handle handle, const float32_t sinTh)
 #endif
 
 static inline void
-PARK_setup(PARK_Handle handle, const float32_t Th)
+PARK_setup(PARK_Handle handle, const float Th)
 {
     PARK_Obj *obj = (PARK_Obj *)handle;
 
