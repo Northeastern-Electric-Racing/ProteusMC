@@ -5,6 +5,7 @@
 #include "cmsis_os.h"
 #include "clarke.h"
 #include "park.h"
+#include "ipark.h"
 
 /* Struct to contain parameters for field oriented control */
 typedef struct
@@ -15,6 +16,7 @@ typedef struct
 
     CLARKE_Obj *clarke_transform;
     PARK_Obj *park_transform;
+    IPARK_Obj *ipark_transform;
 } foc_ctrl_t;
 
 foc_ctrl_t *foc_ctrl_init();
