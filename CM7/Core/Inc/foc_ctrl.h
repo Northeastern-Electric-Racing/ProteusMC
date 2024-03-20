@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "cmsis_os.h"
 #include "clarke.h"
+#include "park.h"
 
 /* Struct to contain parameters for field oriented control */
 typedef struct
@@ -13,6 +14,7 @@ typedef struct
     osMessageQueueId_t command_queue;
 
     CLARKE_Obj *clarke_transform;
+    PARK_Obj *park_transform;
 } foc_ctrl_t;
 
 foc_ctrl_t *foc_ctrl_init();
