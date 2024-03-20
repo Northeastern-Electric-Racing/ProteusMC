@@ -1,8 +1,18 @@
 #include "foc_ctrl.h"
+#include "proteus_config.h"
 #include <stdlib.h>
+#include <math.h>
 #include <assert.h>
 
 #define INBOUND_QUEUE_SIZE 15
+
+/*
+ * CLARKE TRANSFORM PARAMETERS
+ * Found from clarke.h
+ */
+#define NUM_CURRENT_SENSORS     3
+#define CLARKE_ALPHA            1/3
+#define CLARKE_BETA             1/sqrt(3)
 
 foc_ctrl_t *foc_ctrl_init()
 {
@@ -11,6 +21,12 @@ foc_ctrl_t *foc_ctrl_init()
     assert(controller);
     controller->data_queue = osMessageQueueNew(INBOUND_QUEUE_SIZE, sizeof(int[3]), NULL);
     controller->command_queue = osMessageQueueNew(INBOUND_QUEUE_SIZE, sizeof(int[3]), NULL);
+
+    /* Initialize Clarke Transform */
+    controller->clarke_transform = malloc(sizeof(CLARKE_Obj));
+    assert(controller->clarke_transform);
+    CLARKE_setNumSensors(controller->clarke_transform, NUM_CURRENT_SENSORS);
+    CLARKE_setScaleFactors(controller->clarke_transform, CLARKE_ALPHA, CLARKE_BETA);
 
     return controller;
 }
@@ -36,6 +52,8 @@ void vFOCctrl(void *pv_params)
     osStatus_t status;
 
     int16_t phase_buf[3];
+    float phase_currents[3];
+    float id_iq[2];
     int16_t calc_cmd[3];
 
     foc_ctrl_t *controller = (foc_ctrl_t *)pv_params;
@@ -47,7 +65,8 @@ void vFOCctrl(void *pv_params)
         status = osMessageQueueGet(controller->data_queue, phase_buf, NULL, osWaitForever);
         if (status == osOK)
         {
-            // TODO: Execute control pipeline
+            //TODO: Convert raw ADC reading of phases to current values
+            CLARKE_run(controller->clarke_transform, phase_currents, id_iq);
 
             /* Publish to Onboard Temp Queue */
             osMessageQueuePut(controller->command_queue, calc_cmd, 0U, 0U);
