@@ -45,6 +45,7 @@ C_SOURCES =  \
 ../../CM7/Core/Src/state_machine.c \
 ../../CM7/Core/Src/fault.c \
 ../../CM7/Core/Src/ssi_encoder.c \
+../../CM7/Core/Src/controls/clarke.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc_ex.c \
@@ -147,6 +148,7 @@ C_DEFS =  \
 # AS includes
 AS_INCLUDES =  \
 -I../../CM7/Core/Inc
+-I../../CM7/Core/Inc/controls
 
 # C includes
 C_INCLUDES =  \
