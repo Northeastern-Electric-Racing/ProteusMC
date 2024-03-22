@@ -54,6 +54,7 @@
 ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc3;
 DMA_HandleTypeDef hdma_adc1;
+DMA_HandleTypeDef hdma_adc3;
 
 CRC_HandleTypeDef hcrc;
 
@@ -191,8 +192,8 @@ int main(void)
   /* USER CODE BEGIN RTOS_MUTEX */
   // lmao we aren't adding mutexes here but need to init stuff after the kernel initializes
 
-  gatedriver_t *gatedrv_left = gatedrv_init(&htim1, &hadc1, &hspi1);
-  gatedriver_t *gatedrv_right = gatedrv_init(&htim2, &hadc3, &hspi3);
+  gatedriver_t *gatedrv_left = gatedrv_init(&htim1, &hadc1, &hdma_adc1, &hspi1);
+  gatedriver_t *gatedrv_right = gatedrv_init(&htim2, &hadc3, &hdma_adc3, &hspi3);
 
   ssi_encoder_t *ssi_encoder_left = ssi_encoder_init(&hspi2);
   ssi_encoder_t *ssi_encoder_right = ssi_encoder_init(&hspi4);
