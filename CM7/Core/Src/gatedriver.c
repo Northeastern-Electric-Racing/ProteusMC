@@ -21,11 +21,17 @@ static void gatedrv_fault_cb(gatedriver_t* drv)
 
 }
 
-gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef* hadc, SPI_HandleTypeDef* adc_spi)
+static void gatedrv_hdma_adc_cb(DMA_HandleTypeDef* hdma_adc)
+{
+	
+}
+
+gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef* hadc, DMA_HandleTypeDef* hdma_adc, SPI_HandleTypeDef* adc_spi)
 {
 	/* Assert hardware params */
 	assert(tim);
 	assert(hadc);
+	assert(hdma_adc);
 	assert(adc_spi);
 
 	/* Create MPU struct */
@@ -35,6 +41,7 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef* hadc, SPI_
 	/* Set interfaces */
 	gatedriver->tim			= tim;
 	gatedriver->hadc		= hadc;
+	gatedriver->hdma_adc	= hdma_adc;
 	gatedriver->adc_spi		= adc_spi;
 
 	/* Init hardware */
@@ -55,7 +62,7 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef* hadc, SPI_
 
 	/* Configure DMA */
 	assert(HAL_ADC_Start_DMA(gatedriver->hadc, gatedriver->intern_adc_buffer, GATEDRV_SIZE_OF_ADC_DMA));
-	assert(HAL_DMA)
+	assert(HAL_DMA_RegisterCallback(gatedriver->hdma_adc, HAL_DMA_XFER_CPLT_CB_ID, gatedrv_hdma_adc_cb))
 
 	/* Create Mutexes */
 	gatedriver->tim_mutex = osMutexNew(&gatedriver->tim_mutex_attr);

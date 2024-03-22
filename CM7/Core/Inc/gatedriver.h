@@ -32,6 +32,7 @@ typedef struct {
 	uint32_t pulses[GATEDRV_NUM_PHASES];
 
     ADC_HandleTypeDef *hadc;
+    DMA_HandleTypeDef *hdma_adc;
 	SPI_HandleTypeDef *adc_spi;
     uint32_t intern_adc_buffer[GATEDRV_SIZE_OF_ADC_DMA];
 
@@ -42,7 +43,7 @@ typedef struct {
 } gatedriver_t;
 
 /* initialize a new gatedriver */
-gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef* hadc, SPI_HandleTypeDef* adc_spi);
+gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef* hadc, DMA_HandleTypeDef* hdma_adc, SPI_HandleTypeDef* adc_spi);
 
 /* read the dc voltage (V) */
 int16_t gatedrv_read_dc_voltage(gatedriver_t* drv);
