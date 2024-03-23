@@ -59,9 +59,9 @@ extern "C"
 //
 //*****************************************************************************
 
-#include "types.h"
 #include "filter_fo.h"
-#include "libraries/math/include/math.h"
+#include <stdint.h>
+#include <math.h>
 
 //*****************************************************************************
 //
@@ -70,21 +70,21 @@ extern "C"
 //*****************************************************************************
 typedef struct _PID_Obj_
 {
-    float32_t Kp;                       //!< the proportional gain for the PID
+    float Kp;                       //!< the proportional gain for the PID
                                       //!< controller
-    float32_t Ki;                       //!< the integral gain for the PID
+    float Ki;                       //!< the integral gain for the PID
                                       //!< controller
-    float32_t Kd;                       //!< the derivative gain for the PID
+    float Kd;                       //!< the derivative gain for the PID
                                       //!< controller
-    float32_t Ui;                       //!< the integrator start value for the
+    float Ui;                       //!< the integrator start value for the
                                       //!< PID controller
-    float32_t refValue;                 //!< the reference input value
-    float32_t fbackValue;               //!< the feedback input value
-    float32_t ffwdValue;                //!< the feedforward input value
+    float refValue;                 //!< the reference input value
+    float fbackValue;               //!< the feedback input value
+    float ffwdValue;                //!< the feedforward input value
 
-    float32_t outMin;                   //!< the minimum output value allowed for
+    float outMin;                   //!< the minimum output value allowed for
                                       //!< the PID controller
-    float32_t outMax;                   //!< the maximum output value allowed for
+    float outMax;                   //!< the maximum output value allowed for
                                       //!< the PID controller
     FILTER_FO_Handle derFilterHandle; //!< the derivative filter handle
     FILTER_FO_Obj derFilter;          //!< the derivative filter object
@@ -119,8 +119,8 @@ typedef struct _PID_Obj_ *PID_Handle;
 //
 //*****************************************************************************
 extern void
-PID_getDerFilterParams(PID_Handle handle, float32_t *b0, float32_t *b1,
-                       float32_t *a1, float32_t *x1, float32_t *y1);
+PID_getDerFilterParams(PID_Handle handle, float *b0, float *b1,
+                       float *a1, float *x1, float *y1);
 
 //*****************************************************************************
 //
@@ -131,7 +131,7 @@ PID_getDerFilterParams(PID_Handle handle, float32_t *b0, float32_t *b1,
 //! \return    The feedback value in the PID controller
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 PID_getFbackValue(PID_Handle handle)
 {
     PID_Obj *obj = (PID_Obj *)handle;
@@ -148,7 +148,7 @@ PID_getFbackValue(PID_Handle handle)
 //! \return    The feedforward value in the PID controller
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 PID_getFfwdValue(PID_Handle handle)
 {
     PID_Obj *obj = (PID_Obj *)handle;
@@ -172,7 +172,7 @@ PID_getFfwdValue(PID_Handle handle)
 //
 //*****************************************************************************
 static inline void
-PID_getGains(PID_Handle handle, float32_t *pKp, float32_t *pKi, float32_t *pKd)
+PID_getGains(PID_Handle handle, float *pKp, float *pKi, float *pKd)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -192,7 +192,7 @@ PID_getGains(PID_Handle handle, float32_t *pKp, float32_t *pKi, float32_t *pKd)
 //! \return    The derivative gain in the PID controller
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 PID_getKd(PID_Handle handle)
 {
     PID_Obj *obj = (PID_Obj *)handle;
@@ -209,7 +209,7 @@ PID_getKd(PID_Handle handle)
 //! \return    The integral gain in the PID controller
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 PID_getKi(PID_Handle handle)
 {
     PID_Obj *obj = (PID_Obj *)handle;
@@ -226,7 +226,7 @@ PID_getKi(PID_Handle handle)
 //! \return    The proportional gain in the PID controller
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 PID_getKp(PID_Handle handle)
 {
     PID_Obj *obj = (PID_Obj *)handle;
@@ -249,7 +249,7 @@ PID_getKp(PID_Handle handle)
 //
 //*****************************************************************************
 static inline void
-PID_getMinMax(PID_Handle handle, float32_t *pOutMin, float32_t *pOutMax)
+PID_getMinMax(PID_Handle handle, float *pOutMin, float *pOutMax)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -268,7 +268,7 @@ PID_getMinMax(PID_Handle handle, float32_t *pOutMin, float32_t *pOutMax)
 //! \return     The maximum output value allowed
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 PID_getOutMax(PID_Handle handle)
 {
     PID_Obj *obj = (PID_Obj *)handle;
@@ -285,7 +285,7 @@ PID_getOutMax(PID_Handle handle)
 //! \return     The minimum output value allowed
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 PID_getOutMin(PID_Handle handle)
 {
     PID_Obj *obj = (PID_Obj *)handle;
@@ -302,7 +302,7 @@ PID_getOutMin(PID_Handle handle)
 //! \return    The reference value in the PID controller
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 PID_getRefValue(PID_Handle handle)
 {
     PID_Obj *obj = (PID_Obj *)handle;
@@ -319,7 +319,7 @@ PID_getRefValue(PID_Handle handle)
 //! \return    The integrator start value for the PID controller
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 PID_getUi(PID_Handle handle)
 {
     PID_Obj *obj = (PID_Obj *)handle;
@@ -364,8 +364,8 @@ PID_init(void *pMemory, const size_t numBytes);
 //
 //*****************************************************************************
 extern void
-PID_setDerFilterParams(PID_Handle handle, const float32_t b0, const float32_t b1,
-                       const float32_t a1, const float32_t x1, const float32_t y1);
+PID_setDerFilterParams(PID_Handle handle, const float b0, const float b1,
+                       const float a1, const float x1, const float y1);
 
 //*****************************************************************************
 //
@@ -379,7 +379,7 @@ PID_setDerFilterParams(PID_Handle handle, const float32_t b0, const float32_t b1
 //
 //*****************************************************************************
 static inline void
-PID_setFbackValue(PID_Handle handle, const float32_t fbackValue)
+PID_setFbackValue(PID_Handle handle, const float fbackValue)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -400,7 +400,7 @@ PID_setFbackValue(PID_Handle handle, const float32_t fbackValue)
 //
 //*****************************************************************************
 static inline void
-PID_setFfwdValue(PID_Handle handle, const float32_t ffwdValue)
+PID_setFfwdValue(PID_Handle handle, const float ffwdValue)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -425,8 +425,8 @@ PID_setFfwdValue(PID_Handle handle, const float32_t ffwdValue)
 //
 //*****************************************************************************
 static inline void
-PID_setGains(PID_Handle handle, const float32_t Kp, const float32_t Ki,
-             const float32_t Kd)
+PID_setGains(PID_Handle handle, const float Kp, const float Ki,
+             const float Kd)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -449,7 +449,7 @@ PID_setGains(PID_Handle handle, const float32_t Kp, const float32_t Ki,
 //
 //*****************************************************************************
 static inline void
-PID_setKd(PID_Handle handle, const float32_t Kd)
+PID_setKd(PID_Handle handle, const float Kd)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -470,7 +470,7 @@ PID_setKd(PID_Handle handle, const float32_t Kd)
 //
 //*****************************************************************************
 static inline void
-PID_setKi(PID_Handle handle, const float32_t Ki)
+PID_setKi(PID_Handle handle, const float Ki)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -491,7 +491,7 @@ PID_setKi(PID_Handle handle, const float32_t Ki)
 //
 //*****************************************************************************
 static inline void
-PID_setKp(PID_Handle handle, const float32_t Kp)
+PID_setKp(PID_Handle handle, const float Kp)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -515,7 +515,7 @@ PID_setKp(PID_Handle handle, const float32_t Kp)
 //
 //*****************************************************************************
 static inline void
-PID_setMinMax(PID_Handle handle, const float32_t outMin, const float32_t outMax)
+PID_setMinMax(PID_Handle handle, const float outMin, const float outMax)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -537,7 +537,7 @@ PID_setMinMax(PID_Handle handle, const float32_t outMin, const float32_t outMax)
 //
 //*****************************************************************************
 static inline void
-PID_setOutMax(PID_Handle handle, const float32_t outMax)
+PID_setOutMax(PID_Handle handle, const float outMax)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -558,7 +558,7 @@ PID_setOutMax(PID_Handle handle, const float32_t outMax)
 //
 //*****************************************************************************
 static inline void
-PID_setOutMin(PID_Handle handle, const float32_t outMin)
+PID_setOutMin(PID_Handle handle, const float outMin)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -579,7 +579,7 @@ PID_setOutMin(PID_Handle handle, const float32_t outMin)
 //
 //*****************************************************************************
 static inline void
-PID_setRefValue(PID_Handle handle, const float32_t refValue)
+PID_setRefValue(PID_Handle handle, const float refValue)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -600,7 +600,7 @@ PID_setRefValue(PID_Handle handle, const float32_t refValue)
 //
 //*****************************************************************************
 static inline void
-PID_setUi(PID_Handle handle, const float32_t Ui)
+PID_setUi(PID_Handle handle, const float Ui)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -627,21 +627,21 @@ PID_setUi(PID_Handle handle, const float32_t Ui)
 //
 //*****************************************************************************
 static inline void
-PID_run_parallel(PID_Handle handle, const float32_t refValue,
-                 const float32_t fbackValue, const float32_t ffwdValue,
-                 float32_t *pOutValue)
+PID_run_parallel(PID_Handle handle, const float refValue,
+                 const float fbackValue, const float ffwdValue,
+                 float *pOutValue)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
-    float32_t Error;
-    float32_t Kp = PID_getKp(handle);
-    float32_t Ki = PID_getKi(handle);
-    float32_t Kd = PID_getKd(handle);
-    float32_t Up;
-    float32_t Ui = PID_getUi(handle);
-    float32_t Ud_tmp,Ud;
-    float32_t outMax = PID_getOutMax(handle);
-    float32_t outMin = PID_getOutMin(handle);
+    float Error;
+    float Kp = PID_getKp(handle);
+    float Ki = PID_getKi(handle);
+    float Kd = PID_getKd(handle);
+    float Up;
+    float Ui = PID_getUi(handle);
+    float Ud_tmp,Ud;
+    float outMax = PID_getOutMax(handle);
+    float outMin = PID_getOutMin(handle);
 
     Error = refValue - fbackValue;
 
@@ -692,21 +692,21 @@ PID_run_parallel(PID_Handle handle, const float32_t refValue,
 //
 //*****************************************************************************
 static inline void
-PID_run_series(PID_Handle handle, const float32_t refValue,
-               const float32_t fbackValue, const float32_t ffwdValue,
-               float32_t *pOutValue)
+PID_run_series(PID_Handle handle, const float refValue,
+               const float fbackValue, const float ffwdValue,
+               float *pOutValue)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
-    float32_t Error;
-    float32_t Kp = PID_getKp(handle);
-    float32_t Ki = PID_getKi(handle);
-    float32_t Kd = PID_getKd(handle);
-    float32_t Up;
-    float32_t Ui = PID_getUi(handle);
-    float32_t Ud_tmp,Ud;
-    float32_t outMax = PID_getOutMax(handle);
-    float32_t outMin = PID_getOutMin(handle);
+    float Error;
+    float Kp = PID_getKp(handle);
+    float Ki = PID_getKi(handle);
+    float Kd = PID_getKd(handle);
+    float Up;
+    float Ui = PID_getUi(handle);
+    float Ud_tmp,Ud;
+    float outMax = PID_getOutMax(handle);
+    float outMin = PID_getOutMin(handle);
 
     Error = refValue - fbackValue;
 

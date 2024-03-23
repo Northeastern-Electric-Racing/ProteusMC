@@ -7,6 +7,7 @@
 #include "park.h"
 #include "ipark.h"
 #include "svgen.h"
+#include "pid.h"
 
 /* Struct to contain parameters for field oriented control */
 typedef struct {
@@ -14,6 +15,8 @@ typedef struct {
     osMessageQueueId_t data_queue;
     osMessageQueueId_t command_queue;
 
+    PID_Obj *q_pid;
+    PID_Obj *d_pid;
     CLARKE_Obj *clarke_transform;
     PARK_Obj *park_transform;
     IPARK_Obj *ipark_transform;
