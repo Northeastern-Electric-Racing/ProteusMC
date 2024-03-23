@@ -77,8 +77,8 @@ SVGENCURRENT_Handle SVGENCURRENT_init(void *pMemory,const size_t numBytes)
 } // end of SVGENCURRENT_init() function
 
 
-void SVGENCURRENT_setup(SVGENCURRENT_Handle handle, const float32_t minWidth_usec,
-                        const float32_t pwmFreq_kHz, const float32_t systemFreq_MHz)
+void SVGENCURRENT_setup(SVGENCURRENT_Handle handle, const float minWidth_usec,
+                        const float pwmFreq_kHz, const float systemFreq_MHz)
 {
     uint16_t minWidth_counts = (uint16_t)(minWidth_usec * systemFreq_MHz);
 
@@ -88,7 +88,7 @@ void SVGENCURRENT_setup(SVGENCURRENT_Handle handle, const float32_t minWidth_use
     // Tpwm = 1/(USER_PWM_FREQ_kHz * 1000) = * (USER_PWM_FREQ_kHz * 0.001)
     // The minimum pwm width is the same in two zero vectors for svpwm
 
-    float32_t dutyLimit = 0.5f - (minWidth_usec * pwmFreq_kHz * 0.001f);
+    float dutyLimit = 0.5f - (minWidth_usec * pwmFreq_kHz * 0.001f);
 
     SVGENCURRENT_setMinWidth(handle, minWidth_counts);
     SVGENCURRENT_setIgnoreShunt(handle, SVGENCURRENT_USE_ALL);

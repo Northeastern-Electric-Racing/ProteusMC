@@ -6,10 +6,10 @@
 #include "clarke.h"
 #include "park.h"
 #include "ipark.h"
+#include "svgen.h"
 
 /* Struct to contain parameters for field oriented control */
-typedef struct
-{
+typedef struct {
     osThreadId_t foc_ctrl;
     osMessageQueueId_t data_queue;
     osMessageQueueId_t command_queue;
@@ -17,6 +17,7 @@ typedef struct
     CLARKE_Obj *clarke_transform;
     PARK_Obj *park_transform;
     IPARK_Obj *ipark_transform;
+    SVGEN_Obj *svm;
 } foc_ctrl_t;
 
 foc_ctrl_t *foc_ctrl_init();

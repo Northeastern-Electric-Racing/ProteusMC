@@ -65,7 +65,7 @@ extern "C"
 #include <math.h>
 #endif // __TMS320C28XX_CLA__
 
-#include "libraries/math/include/math.h"
+#include <stdint.h>
 
 // **************************************************************************
 // the typedefs
@@ -105,7 +105,7 @@ typedef struct _SVGENCURRENT_Obj_
   SVGENCURRENT_IgnoreShunt_e    ignoreShunt; //!< Output of what shunt or shunts to ignore
   SVGENCURRENT_MeasureShunt_e   compMode;    //!< Output phase compensation mode
   SVGENCURRENT_VmidShunt_e      Vmid;        //!< The middle amplitude voltage among the three phase voltages
-  float32_t                     Vlimit;      //!< The maximum output voltage duty that current can be sampled
+  float                     Vlimit;      //!< The maximum output voltage duty that current can be sampled
   int16_t                       Voffset;     //!< The offset
 } SVGENCURRENT_Obj;
 
@@ -135,8 +135,8 @@ cla_SVGENCURRENT_init(void *pMemory,const size_t numBytes);
 //! \param[in] minWidth_usec  The minimum pwm width
 //! \return    None
 //*****************************************************************************
-void SVGENCURRENT_setup(SVGENCURRENT_Handle handle, const float32_t minWidth_usec,
-                   const float32_t pwmFreq_kHz, const float32_t systemFreq_MHz);
+void SVGENCURRENT_setup(SVGENCURRENT_Handle handle, const float minWidth_usec,
+                   const float pwmFreq_kHz, const float systemFreq_MHz);
 
 
 //! \brief     Sets the minimum Duty Cycle width that the lower switch can be on before
@@ -190,7 +190,7 @@ SVGENCURRENT_setMode(SVGENCURRENT_Handle handle,
 //! \param[in] Vlimit         Vlimit
 static inline void
 SVGENCURRENT_setVlimit(SVGENCURRENT_Handle handle,
-                       const float32_t Vlimit)
+                       const float Vlimit)
 {
   SVGENCURRENT_Obj *obj = (SVGENCURRENT_Obj *)handle;
 
@@ -228,7 +228,7 @@ SVGENCURRENT_getMinWidth(SVGENCURRENT_Handle handle)
 //! \brief     Gets the Voltage(Duty) Limit value
 //! \param[in] handle  The Svgen Current handle
 //! \return    Integer value of the voltage(duty) limit
-static inline float32_t
+static inline float
 SVGENCURRENT_getVlimit(SVGENCURRENT_Handle handle)
 {
   SVGENCURRENT_Obj *obj = (SVGENCURRENT_Obj *)handle;
@@ -348,13 +348,13 @@ SVGENCURRENT_RunIgnoreShunt(SVGENCURRENT_Handle handle,
 //! \param[in] pADCData                   Pointer to the shunt currents
 static inline void
 SVGENCURRENT_RunRegenCurrent(SVGENCURRENT_Handle handle,
-                             MATH_Vec3 *pADCData, MATH_Vec3 *pADCDataPrev)
+                             float pADCData[3], float pADCDataPrev[3])
 {
   SVGENCURRENT_Obj *obj = (SVGENCURRENT_Obj *)handle;
 
-  float32_t Ia = pADCData->value[0];
-  float32_t Ib = pADCData->value[1];
-  float32_t Ic = pADCData->value[2];
+  float Ia = pADCData[0];
+  float Ib = pADCData[1];
+  float Ic = pADCData[2];
 
   // select valid shunts and ignore one when needed
   if(obj->ignoreShunt == SVGENCURRENT_IGNORE_A)
@@ -388,19 +388,19 @@ SVGENCURRENT_RunRegenCurrent(SVGENCURRENT_Handle handle,
       Ic = Ib;
   }
 
-  pADCData->value[0] = Ia;
-  pADCData->value[1] = Ib;
-  pADCData->value[2] = Ic;
+  pADCData[0] = Ia;
+  pADCData[1] = Ib;
+  pADCData[2] = Ic;
 
-  pADCDataPrev->value[0] += (pADCData->value[0] - pADCDataPrev->value[0]) * 0.5f;
-  pADCDataPrev->value[1] += (pADCData->value[1] - pADCDataPrev->value[1]) * 0.5f;
-  pADCDataPrev->value[2] += (pADCData->value[2] - pADCDataPrev->value[2]) * 0.5f;
+  pADCDataPrev[0] += (pADCData[0] - pADCDataPrev[0]) * 0.5f;
+  pADCDataPrev[1] += (pADCData[1] - pADCDataPrev[1]) * 0.5f;
+  pADCDataPrev[2] += (pADCData[2] - pADCDataPrev[2]) * 0.5f;
 
   if(obj->compMode > SVGENCURRENT_TWO_PHASE_MEASURABLE)
   {
-      pADCData->value[0] = pADCDataPrev->value[0];
-      pADCData->value[1] = pADCDataPrev->value[1];
-      pADCData->value[2] = pADCDataPrev->value[2];
+      pADCData[0] = pADCDataPrev[0];
+      pADCData[1] = pADCDataPrev[1];
+      pADCData[2] = pADCDataPrev[2];
   }
 
   return;
@@ -413,16 +413,16 @@ SVGENCURRENT_RunRegenCurrent(SVGENCURRENT_Handle handle,
 //! \param[in] pPWMData_old                   The  pointer of old PWM data
 static inline void
 SVGENCURRENT_compPWMData(SVGENCURRENT_Handle handle,
-                         MATH_Vec3 *pPWMData, MATH_Vec3 *pPWMData_prev)
+                         float pPWMData[3], float pPWMData_prev[3])
 {
     SVGENCURRENT_Obj *obj = (SVGENCURRENT_Obj *)handle;
 
-    float32_t Va_avg = (pPWMData->value[0] + pPWMData_prev->value[0]) * 0.5f;
-    float32_t Vb_avg = (pPWMData->value[1] + pPWMData_prev->value[1]) * 0.5f;
-    float32_t Vc_avg = (pPWMData->value[2] + pPWMData_prev->value[2]) * 0.5f;
+    float Va_avg = (pPWMData[0] + pPWMData_prev[0]) * 0.5f;
+    float Vb_avg = (pPWMData[1] + pPWMData_prev[1]) * 0.5f;
+    float Vc_avg = (pPWMData[2] + pPWMData_prev[2]) * 0.5f;
 
-    float32_t Vlimit = obj->Vlimit;
-    float32_t Vmid, Vmid_prev, Voffset;
+    float Vlimit = obj->Vlimit;
+    float Vmid, Vmid_prev, Voffset;
 
     //define compensation mode
     if(Va_avg > Vlimit)
@@ -434,14 +434,14 @@ SVGENCURRENT_compPWMData(SVGENCURRENT_Handle handle,
             if(Va_avg > Vb_avg)
             {
                 obj->Vmid = SVGENCURRENT_VMID_B;
-                Vmid = pPWMData->value[1];
-                Vmid_prev = pPWMData_prev->value[1];
+                Vmid = pPWMData[1];
+                Vmid_prev = pPWMData_prev[1];
             }
             else
             {
                 obj->Vmid = SVGENCURRENT_VMID_A;
-                Vmid = pPWMData->value[0];
-                Vmid_prev = pPWMData_prev->value[0];
+                Vmid = pPWMData[0];
+                Vmid_prev = pPWMData_prev[0];
             }
         }
         else if(Vc_avg > Vlimit)
@@ -451,14 +451,14 @@ SVGENCURRENT_compPWMData(SVGENCURRENT_Handle handle,
             if(Va_avg > Vc_avg)
             {
                 obj->Vmid = SVGENCURRENT_VMID_C;
-                Vmid = pPWMData->value[2];
-                Vmid_prev = pPWMData_prev->value[2];
+                Vmid = pPWMData[2];
+                Vmid_prev = pPWMData_prev[2];
             }
             else
             {
                 obj->Vmid = SVGENCURRENT_VMID_A;
-                Vmid = pPWMData->value[0];
-                Vmid_prev = pPWMData_prev->value[0];
+                Vmid = pPWMData[0];
+                Vmid_prev = pPWMData_prev[0];
             }
         }
         else
@@ -486,14 +486,14 @@ SVGENCURRENT_compPWMData(SVGENCURRENT_Handle handle,
                 if(Vb_avg > Vc_avg)
                 {
                     obj->Vmid = SVGENCURRENT_VMID_C;
-                    Vmid = pPWMData->value[2];
-                    Vmid_prev = pPWMData_prev->value[2];
+                    Vmid = pPWMData[2];
+                    Vmid_prev = pPWMData_prev[2];
                 }
                 else
                 {
                     obj->Vmid = SVGENCURRENT_VMID_B;
-                    Vmid = pPWMData->value[1];
-                    Vmid_prev = pPWMData_prev->value[1];
+                    Vmid = pPWMData[1];
+                    Vmid_prev = pPWMData_prev[1];
                 }
             }
             else
@@ -535,34 +535,34 @@ SVGENCURRENT_compPWMData(SVGENCURRENT_Handle handle,
     {
         Voffset = (Vmid + Vmid_prev) * 0.5f - Vlimit;
 
-        if(pPWMData->value[0] > -0.50f)
+        if(pPWMData[0] > -0.50f)
         {
-            pPWMData->value[0] -= Voffset;
+            pPWMData[0] -= Voffset;
         }
 
-        if(pPWMData->value[1] > -0.50f)
+        if(pPWMData[1] > -0.50f)
         {
-            pPWMData->value[1] -= Voffset;
+            pPWMData[1] -= Voffset;
         }
 
-        if(pPWMData->value[2] > -0.50f)
+        if(pPWMData[2] > -0.50f)
         {
-            pPWMData->value[2] -= Voffset;
+            pPWMData[2] -= Voffset;
         }
 
         obj->Voffset = Voffset;
     }
 
     // get ignore current
-    if(((pPWMData->value[0] + pPWMData_prev->value[0]) * 0.5f) > Vlimit)
+    if(((pPWMData[0] + pPWMData_prev[0]) * 0.5f) > Vlimit)
     {
         obj->ignoreShunt = SVGENCURRENT_IGNORE_A;
     }
-    else if(((pPWMData->value[1] + pPWMData_prev->value[1]) * 0.5f) > Vlimit)
+    else if(((pPWMData[1] + pPWMData_prev[1]) * 0.5f) > Vlimit)
     {
         obj->ignoreShunt = SVGENCURRENT_IGNORE_B;
     }
-    else if(((pPWMData->value[2] + pPWMData_prev->value[2]) * 0.5f) > Vlimit)
+    else if(((pPWMData[2] + pPWMData_prev[2]) * 0.5f) > Vlimit)
     {
         obj->ignoreShunt = SVGENCURRENT_IGNORE_C;
     }
@@ -572,9 +572,9 @@ SVGENCURRENT_compPWMData(SVGENCURRENT_Handle handle,
     }
 
 
-    pPWMData_prev->value[0] = pPWMData->value[0];
-    pPWMData_prev->value[1] = pPWMData->value[1];
-    pPWMData_prev->value[2] = pPWMData->value[2];
+    pPWMData_prev[0] = pPWMData[0];
+    pPWMData_prev[1] = pPWMData[1];
+    pPWMData_prev[2] = pPWMData[2];
 
     return;
 } // end of SVGENCURRENT_compPWMData() function
