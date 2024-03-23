@@ -435,7 +435,7 @@ __weak bool MCI_RampCompleted( MCI_Handle_t * pHandle )
   * @param  pHandle Pointer on the component instance to work on.
   * @retval bool It returns true if the command is executed, false otherwise.
   *
-  * @deprecated This function is deprecated and should not be used anymore. It will be
+  * @deprecated This function is deprecated and should not be used anymore. It will be 
   *             removed in a future version of the MCSDK. Use MCI_StopRamp() instead.
   */
 __weak bool MCI_StopSpeedRamp( MCI_Handle_t * pHandle )
@@ -482,9 +482,9 @@ __weak int16_t MCI_GetAvrgMecSpeedUnit( MCI_Handle_t * pHandle )
 
 /**
   * @brief  Returns the current mechanical rotor speed reference expressed in the unit defined by #SPEED_UNIT
-  *
+  *         
   * @param  pHandle Pointer on the component instance to work on.
-  *
+  *         
   */
 __weak int16_t MCI_GetMecSpeedRefUnit( MCI_Handle_t * pHandle )
 {

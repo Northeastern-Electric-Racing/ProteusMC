@@ -1,10 +1,10 @@
 
 /**
   ******************************************************************************
-  * @file    stm32f30x_mc_it.c
+  * @file    stm32f30x_mc_it.c 
   * @author  Motor Control SDK Team, ST Microelectronics
   * @brief   Main Interrupt Service Routines.
-  *          This file provides exceptions handler and peripherals interrupt
+  *          This file provides exceptions handler and peripherals interrupt 
   *          service routine related to Motor Control for the STM32F3 Family.
   ******************************************************************************
   * @attention
@@ -19,7 +19,7 @@
   *
   ******************************************************************************
   * @ingroup STM32F30x_IRQ_Handlers
-  */
+  */ 
 
 /* Includes ------------------------------------------------------------------*/
 #include "mc_type.h"
@@ -41,7 +41,7 @@
 /** @addtogroup STM32F30x_IRQ_Handlers STM32F30x IRQ Handlers
   * @{
   */
-
+  
 /* USER CODE BEGIN PRIVATE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -81,16 +81,16 @@ void ADC1_2_IRQHandler(void)
   /* USER CODE BEGIN ADC1_2_IRQn 0 */
 
   /* USER CODE END ADC1_2_IRQn 0 */
-
+  
   // Clear Flags M1
   LL_ADC_ClearFlag_JEOS( ADC1 );
 
-  // Highfrequency task
+  // Highfrequency task 
   UI_DACUpdate(TSK_HighFrequencyTask());
  /* USER CODE BEGIN HighFreq */
 
- /* USER CODE END HighFreq  */
-
+ /* USER CODE END HighFreq  */  
+ 
  /* USER CODE BEGIN ADC1_2_IRQn 1 */
 
  /* USER CODE END ADC1_2_IRQn 1 */
@@ -99,43 +99,43 @@ void ADC1_2_IRQHandler(void)
 /**
   * @brief  This function handles first motor TIMx Update interrupt request.
   * @param  None
-  * @retval None
+  * @retval None 
   */
 void TIMx_UP_M1_IRQHandler(void)
 {
  /* USER CODE BEGIN TIMx_UP_M1_IRQn 0 */
 
- /* USER CODE END  TIMx_UP_M1_IRQn 0 */
-
+ /* USER CODE END  TIMx_UP_M1_IRQn 0 */ 
+ 
     LL_TIM_ClearFlag_UPDATE(TIM1);
-    R3_1_TIMx_UP_IRQHandler(&PWM_Handle_M1);
+    R3_1_TIMx_UP_IRQHandler(&PWM_Handle_M1);    
 
  /* USER CODE BEGIN TIMx_UP_M1_IRQn 1 */
 
- /* USER CODE END  TIMx_UP_M1_IRQn 1 */
+ /* USER CODE END  TIMx_UP_M1_IRQn 1 */ 
 }
 
 void TIMx_BRK_M1_IRQHandler(void)
 {
   /* USER CODE BEGIN TIMx_BRK_M1_IRQn 0 */
 
-  /* USER CODE END TIMx_BRK_M1_IRQn 0 */
+  /* USER CODE END TIMx_BRK_M1_IRQn 0 */ 
   if (LL_TIM_IsActiveFlag_BRK(TIM1))
   {
     LL_TIM_ClearFlag_BRK(TIM1);
-    R3_1_BRK_IRQHandler(&PWM_Handle_M1);
+    R3_1_BRK_IRQHandler(&PWM_Handle_M1);    
   }
   if (LL_TIM_IsActiveFlag_BRK2(TIM1))
   {
-    LL_TIM_ClearFlag_BRK2(TIM1);
-    R3_1_BRK2_IRQHandler(&PWM_Handle_M1);
+    LL_TIM_ClearFlag_BRK2(TIM1);  
+    R3_1_BRK2_IRQHandler(&PWM_Handle_M1);    
   }
   /* Systick is not executed due low priority so is necessary to call MC_Scheduler here.*/
   MC_Scheduler();
-
+  
   /* USER CODE BEGIN TIMx_BRK_M1_IRQn 1 */
 
-  /* USER CODE END TIMx_BRK_M1_IRQn 1 */
+  /* USER CODE END TIMx_BRK_M1_IRQn 1 */ 
 }
 
 /*Start here***********************************************************/
@@ -165,7 +165,7 @@ void USART_IRQHandler(void)
     }
   /* USER CODE BEGIN USART_RXNE */
 
-  /* USER CODE END USART_RXNE  */
+  /* USER CODE END USART_RXNE  */ 
   }
 
   if (LL_USART_IsActiveFlag_TXE(pUSART.USARTx))
@@ -175,7 +175,7 @@ void USART_IRQHandler(void)
 
     /* USER CODE END USART_TXE   */
   }
-
+  
   if (LL_USART_IsActiveFlag_ORE(pUSART.USARTx)) /* Overrun error occurs */
   {
     /* Send Overrun message */
@@ -184,7 +184,7 @@ void USART_IRQHandler(void)
     UI_SerialCommunicationTimeOutStop();
     /* USER CODE BEGIN USART_ORE */
 
-    /* USER CODE END USART_ORE   */
+    /* USER CODE END USART_ORE   */   
   }
   /* USER CODE BEGIN USART_IRQn 1 */
 
@@ -204,7 +204,7 @@ void HardFault_Handler(void)
 
  /* USER CODE END HardFault_IRQn 0 */
   TSK_HardwareFaultTask();
-
+  
   /* Go to infinite loop when Hard Fault exception occurs */
   while (1)
   {
@@ -216,12 +216,12 @@ void HardFault_Handler(void)
         LL_USART_ClearFlag_ORE(pUSART.USARTx); /* Clear overrun flag */
         UI_SerialCommunicationTimeOutStop();
       }
-
+      
       if (LL_USART_IsActiveFlag_TXE(pUSART.USARTx))
-      {
+      {   
         UFCP_TX_IRQ_Handler(&pUSART);
-      }
-
+      }  
+      
       if (LL_USART_IsActiveFlag_RXNE(pUSART.USARTx)) /* Valid data have been received */
       {
         uint16_t retVal;
@@ -238,7 +238,7 @@ void HardFault_Handler(void)
       else
       {
       }
-    }
+    }  
   }
  /* USER CODE BEGIN HardFault_IRQn 1 */
 
@@ -260,7 +260,7 @@ static uint8_t SystickDividerCounter = SYSTICK_DIVIDER;
     HAL_SYSTICK_IRQHandler();
     SystickDividerCounter = 0;
   }
-  SystickDividerCounter ++;
+  SystickDividerCounter ++;  
 #endif /* MC_HAL_IS_USED */
 
   /* USER CODE BEGIN SysTick_IRQn 1 */
@@ -277,10 +277,10 @@ static uint8_t SystickDividerCounter = SYSTICK_DIVIDER;
 void EXTI15_10_IRQHandler (void)
 {
 	/* USER CODE BEGIN START_STOP_BTN */
-  if ( LL_EXTI_ReadFlag_0_31(LL_EXTI_LINE_13) )
-  {
-    LL_EXTI_ClearFlag_0_31 (LL_EXTI_LINE_13);
-    UI_HandleStartStopButton_cb ();
+  if ( LL_EXTI_ReadFlag_0_31(LL_EXTI_LINE_13) ) 
+  {                                                                                
+    LL_EXTI_ClearFlag_0_31 (LL_EXTI_LINE_13);  
+    UI_HandleStartStopButton_cb ();                                               
   }
 
 }

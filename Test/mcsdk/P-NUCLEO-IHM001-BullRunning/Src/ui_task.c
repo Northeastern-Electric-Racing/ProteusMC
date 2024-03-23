@@ -32,7 +32,7 @@ DAC_UI_Handle_t * pDAC = MC_NULL;
 extern DAC_UI_Handle_t DAC_UI_Params;
 
 MCP_Handle_t * pMCP = MC_NULL;
-MCP_Handle_t MCP_UI_Params;
+MCP_Handle_t MCP_UI_Params; 
 
 static volatile uint16_t  bUITaskCounter;
 static volatile uint16_t  bCOMTimeoutCounter;
@@ -41,7 +41,7 @@ static volatile uint16_t  bCOMATRTimeCounter = SERIALCOM_ATR_TIME_TICKS;
 void UI_TaskInit( uint32_t* pUICfg, uint8_t bMCNum, MCI_Handle_t* pMCIList[],
                   MCT_Handle_t* pMCTList[],const char* s_fwVer )
 {
-      pDAC = &DAC_UI_Params;
+      pDAC = &DAC_UI_Params;      
       pDAC->_Super = UI_Params;
 
       UI_Init( &pDAC->_Super, bMCNum, pMCIList, pMCTList, pUICfg ); /* Init UI and link MC obj */
@@ -79,7 +79,7 @@ __weak void UI_Scheduler(void)
 __weak void UI_DACUpdate(uint8_t bMotorNbr)
 {
   if (UI_GetSelectedMC(&pDAC->_Super) == bMotorNbr)
-  {
+  {  
     UI_DACExec(&pDAC->_Super); /* Exec DAC update */
   }
 }

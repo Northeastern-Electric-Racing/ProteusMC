@@ -51,22 +51,22 @@
   * @param  pHandle pointer on related component instance.
   */
 __weak void DAC_Init(UI_Handle_t *pHandle)
-{
+{  
   /* Enable DAC Channel1 */
   LL_DAC_Enable(DAC1, LL_DAC_CHANNEL_1);
 }
 
 /**
-  * @brief  This method is used to update the DAC outputs. The selected
-  *         variables will be provided in the related output channels. This is
+  * @brief  This method is used to update the DAC outputs. The selected 
+  *         variables will be provided in the related output channels. This is 
   *         the implementation of the virtual function.
-  * @param  pHandle pointer on related component instance.
+  * @param  pHandle pointer on related component instance. 
   */
 __weak void DAC_Exec(UI_Handle_t *pHandle)
 {
   DAC_UI_Handle_t *pDacHandle = (DAC_UI_Handle_t *)pHandle;
   MC_Protocol_REG_t bCh_var;
-
+  
   bCh_var = pDacHandle->bChannel_variable[DAC_CH0];
   LL_DAC_ConvertData12LeftAligned(DAC1, LL_DAC_CHANNEL_1,
                                   DACOFF + ((int16_t)UI_GetReg(pHandle,bCh_var,MC_NULL)));
