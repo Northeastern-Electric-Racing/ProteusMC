@@ -59,8 +59,10 @@ extern "C"
 //
 //*****************************************************************************
 
-#include "types.h"
-#include "libraries/math/include/math.h"
+#include <stdint.h>
+#include <math.h>
+
+#define MATH_SQRTTHREE_OVER_TWO       ((float)(0.8660254038f))
 
 //! \brief Enumeration for svpwm mode
 //!
@@ -79,7 +81,7 @@ typedef enum
 //*****************************************************************************
 typedef struct _SVGEN_Obj_
 {
-    float32_t oneOverDcBus_invV;    //!< The inverse DC bus voltage value, 1/V
+    float oneOverDcBus_invV;    //!< The inverse DC bus voltage value, 1/V
     uint16_t sector;                //!< the sector value of space vector
     SVM_Mode_e svmMode;
 } SVGEN_Obj;
@@ -100,7 +102,7 @@ typedef struct _SVGEN_Obj_ *SVGEN_Handle;
 //! \return    The inverse DC bus voltage value, 1/V
 //
 //*****************************************************************************
-static inline float32_t
+static inline float
 SVGEN_getOneOverDcBus_invV(SVGEN_Handle handle)
 {
     SVGEN_Obj *obj = (SVGEN_Obj *)handle;
@@ -154,7 +156,7 @@ static inline uint16_t SVGEN_getSector(SVGEN_Handle handle)
 //*****************************************************************************
 static inline void
 SVGEN_setOneOverDcBus_invV(SVGEN_Handle handle,
-                           const float32_t oneOverDcBus_invV)
+                           const float oneOverDcBus_invV)
 {
     SVGEN_Obj *obj = (SVGEN_Obj *)handle;
 
@@ -215,7 +217,7 @@ static inline void SVGEN_setSector(SVGEN_Handle handle, uint16_t sector)
 //
 //*****************************************************************************
 static inline void
-SVGEN_setup(SVGEN_Handle handle, const float32_t oneOverDcBus_invV)
+SVGEN_setup(SVGEN_Handle handle, const float oneOverDcBus_invV)
 {
     SVGEN_setOneOverDcBus_invV(handle,oneOverDcBus_invV);
 
@@ -248,31 +250,31 @@ SVGEN_init(void *pMemory, const size_t numBytes);
 //! \param[in] pVabc_pu  The pointer to the three phase voltages, pu
 //!
 //! \return    None
-//
+//d
 //*****************************************************************************
 static inline void
-SVGEN_run(SVGEN_Handle handle, const MATH_Vec2 *pVab_V, MATH_Vec3 *pVabc_pu)
+SVGEN_run(SVGEN_Handle handle, const float pVab_V[2], float pVabc_pu[3])
 {
-    float32_t Vmax_pu = 0,Vmin_pu = 0,Vcom_pu;
-    float32_t oneOverDcBus_invV = SVGEN_getOneOverDcBus_invV(handle);
+    float Vmax_pu = 0,Vmin_pu = 0,Vcom_pu;
+    float oneOverDcBus_invV = SVGEN_getOneOverDcBus_invV(handle);
     SVM_Mode_e svmMode = SVGEN_getMode(handle);
 
-    float32_t Valpha_pu = pVab_V->value[0] * oneOverDcBus_invV;
-    float32_t Vbeta_pu = pVab_V->value[1] * oneOverDcBus_invV;
+    float Valpha_pu = pVab_V[0] * oneOverDcBus_invV;
+    float Vbeta_pu = pVab_V[1] * oneOverDcBus_invV;
 
-    float32_t Va_tmp = (float32_t)(0.5f) * Valpha_pu;
-    float32_t Vb_tmp = MATH_SQRTTHREE_OVER_TWO * Vbeta_pu;
+    float Va_tmp = (float)(0.5f) * Valpha_pu;
+    float Vb_tmp = MATH_SQRTTHREE_OVER_TWO * Vbeta_pu;
 
-    float32_t Va_pu = Valpha_pu;
+    float Va_pu = Valpha_pu;
 
     //
     // -0.5*Valpha + sqrt(3)/2 * Vbeta
     //
-    float32_t Vb_pu = -Va_tmp + Vb_tmp;
+    float Vb_pu = -Va_tmp + Vb_tmp;
 
     //
     // -0.5*Valpha - sqrt(3)/2 * Vbeta
-    float32_t Vc_pu = -Va_tmp - Vb_tmp;
+    float Vc_pu = -Va_tmp - Vb_tmp;
 
     //
     // Find Vmax and Vmin
@@ -303,21 +305,21 @@ SVGEN_run(SVGEN_Handle handle, const MATH_Vec2 *pVab_V, MATH_Vec3 *pVabc_pu)
     if(svmMode == SVM_COM_C)
     {
         // Subtract common-mode term to achieve SV modulation
-        pVabc_pu->value[0] = (Va_pu - Vcom_pu);
-        pVabc_pu->value[1] = (Vb_pu - Vcom_pu);
-        pVabc_pu->value[2] = (Vc_pu - Vcom_pu);
+        pVabc_pu[0] = (Va_pu - Vcom_pu);
+        pVabc_pu[1] = (Vb_pu - Vcom_pu);
+        pVabc_pu[2] = (Vc_pu - Vcom_pu);
     }
     else if(svmMode == SVM_MIN_C)
     {
-        pVabc_pu->value[0] = (Va_pu - Vmin_pu) - 0.5f;
-        pVabc_pu->value[1] = (Vb_pu - Vmin_pu) - 0.5f;
-        pVabc_pu->value[2] = (Vc_pu - Vmin_pu) - 0.5f;
+        pVabc_pu[0] = (Va_pu - Vmin_pu) - 0.5f;
+        pVabc_pu[1] = (Vb_pu - Vmin_pu) - 0.5f;
+        pVabc_pu[2] = (Vc_pu - Vmin_pu) - 0.5f;
     }
     else if(svmMode == SVM_MAX_C)
     {
-        pVabc_pu->value[0] = (Va_pu - Vmax_pu) + 0.5f;
-        pVabc_pu->value[1] = (Vb_pu - Vmax_pu) + 0.5f;
-        pVabc_pu->value[2] = (Vc_pu - Vmax_pu) + 0.5f;
+        pVabc_pu[0] = (Va_pu - Vmax_pu) + 0.5f;
+        pVabc_pu[1] = (Vb_pu - Vmax_pu) + 0.5f;
+        pVabc_pu[2] = (Vc_pu - Vmax_pu) + 0.5f;
     }
 
     return;
