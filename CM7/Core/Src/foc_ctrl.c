@@ -20,6 +20,11 @@
  */
 #define INV_DC_BUS_VOLTAGE      1 / 600
 
+enum {
+    D,
+    Q
+};
+
 foc_ctrl_t *foc_ctrl_init()
 {
     /* Create FOC struct */
@@ -50,6 +55,18 @@ foc_ctrl_t *foc_ctrl_init()
     assert(controller->svm);
     SVGEN_setup(controller->svm, INV_DC_BUS_VOLTAGE);
 
+    /* Iniitialize PIDs */
+    //TODO: Actually initialize values of PID
+    controller->d_pid = malloc(sizeof(PID_Obj));
+    assert(controller->d_pid);
+    //PID_setGains(controller->d_pid, kp, ki, kd);
+    //PID_setMinMax(controller->d_pid);
+
+    controller->q_pid = malloc(sizeof(PID_Obj));
+    assert(controller->q_pid);
+    //PID_setGains(controller->q_pid, kp, ki, kd);
+    //PID_setMinMax(controller->q_pid);
+
     return controller;
 }
 
@@ -77,6 +94,8 @@ void vFOCctrl(void *pv_params)
     float phase_currents[3];
     float alpha_beta[2];
     float id_iq[2];
+    float id_iq_ref[2] = {0, 0}; // Reference d-axis and q-axis currents
+    float id_iq_pid[2];
     int16_t calc_cmd[3];
 
     foc_ctrl_t *controller = (foc_ctrl_t *)pv_params;
@@ -91,7 +110,13 @@ void vFOCctrl(void *pv_params)
             //TODO: Convert raw ADC reading of phases to current values
             CLARKE_run(controller->clarke_transform, phase_currents, alpha_beta);
             PARK_run(controller->park_transform, alpha_beta, id_iq);
-            //TODO: Add PI controller for both d and q
+
+            //TODO: Here, adjust I_q based on the desired current, reference for I_d is always 0
+            //TODO: Set new value to id_iq_reg[Q]
+
+            PID_run_parallel(controller->q_pid, id_iq_ref[D], id_iq[D], 0, &id_iq_pid[D]);
+            PID_run_parallel(controller->d_pid, id_iq_ref[Q], id_iq[Q], 0, &id_iq_pid[Q]);
+
             IPARK_run(controller->ipark_transform, id_iq, alpha_beta);
             SVGEN_run(controller->svm, alpha_beta, calc_cmd);
 

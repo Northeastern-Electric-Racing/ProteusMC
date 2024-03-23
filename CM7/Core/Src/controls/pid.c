@@ -46,8 +46,8 @@
 //
 //*****************************************************************************
 void
-PID_getDerFilterParams(PID_Handle handle, float32_t *b0, float32_t *b1,
-                       float32_t *a1, float32_t *x1, float32_t *y1)
+PID_getDerFilterParams(PID_Handle handle, float *b0, float *b1,
+                       float *a1, float *x1, float *y1)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
@@ -104,8 +104,8 @@ PID_init(void *pMemory, const size_t numBytes)
 //
 //*****************************************************************************
 void
-PID_setDerFilterParams(PID_Handle handle, const float32_t b0, const float32_t b1,
-                       const float32_t a1, const float32_t x1, const float32_t y1)
+PID_setDerFilterParams(PID_Handle handle, const float b0, const float b1,
+                       const float a1, const float x1, const float y1)
 {
     PID_Obj *obj = (PID_Obj *)handle;
 
