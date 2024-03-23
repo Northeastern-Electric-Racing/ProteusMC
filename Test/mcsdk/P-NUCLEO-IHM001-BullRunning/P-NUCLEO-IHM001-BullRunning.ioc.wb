@@ -66,8 +66,8 @@
 # CubeMX versions                                                                                                      #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 File.Version=6
-MxCube.Version=6.4.0
-MxDb.Version=DB.6.0.40
+MxCube.Version=4.25.0
+MxDb.Version=DB.4.0.250
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -91,7 +91,8 @@ ProjectManager.CompilerOptimize=5
 ProjectManager.LibraryCopy=0
 ProjectManager.iocOrigin=MotorControl
 
-ProjectManager.LastFirmware=true
+ProjectManager.LastFirmware=false
+ProjectManager.FirmwarePackage=STM32Cube FW_F3 V1.11.3
 
 ProjectManager.DefaultFWLocation=true
 ProjectManager.DeletePrevious=true
@@ -897,7 +898,7 @@ MotorControl.CORD_MEAS_ERRORS_BEFORE_FAULTS=3
 MotorControl.CORD_VARIANCE_THRESHOLD=4
 MotorControl.CPU_CLK_72_MHZ=true
 MotorControl.CTRBDID=1
-MotorControl.CUBE_MX_VER=6.4.0
+MotorControl.CUBE_MX_VER=4.25.0
 MotorControl.CURR_SAMPLING_TIME=7
 MotorControl.CURRENT_READING_TOPOLOGY=THREE_SHUNT
 MotorControl.DAC_EMULATED=false
@@ -1174,9 +1175,9 @@ MotorControl.OPEN_LOOP_VOLTAGE_d=6000
 MotorControl.OV_CURR_BYPASS_GPIO_PIN=LL_GPIO_PIN_5
 MotorControl.OV_CURR_BYPASS_GPIO_PORT=GPIOD
 MotorControl.OV_TEMPERATURE_HYSTERESIS_C=10
-MotorControl.OV_TEMPERATURE_PROT_ENABLING=true
+MotorControl.OV_TEMPERATURE_PROT_ENABLING=false
 MotorControl.OV_TEMPERATURE_THRESHOLD_C=110
-MotorControl.OV_VOLTAGE_PROT_ENABLING=true
+MotorControl.OV_VOLTAGE_PROT_ENABLING=false
 MotorControl.OV_VOLTAGE_THRESHOLD_V=36
 MotorControl.OVERCURR_FEEDBACK_POLARITY=EMSTOP2_ACTIVE_LOW
 MotorControl.OVERCURR_PROTECTION_HW_DISABLING=DOUT_ACTIVE_HIGH
@@ -1331,7 +1332,7 @@ MotorControl.USART_TX_GPIO_PIN=LL_GPIO_PIN_2
 MotorControl.USART_TX_GPIO_PORT=GPIOA
 MotorControl.USE_3OPAMPS=false
 MotorControl.USE_INTERNAL_OPAMP=false
-MotorControl.UV_VOLTAGE_PROT_ENABLING=true
+MotorControl.UV_VOLTAGE_PROT_ENABLING=false
 MotorControl.V0_V=1.055
 MotorControl.VARIANCE_THRESHOLD=0.1
 MotorControl.VBUS_ADC=ADC1
