@@ -14,6 +14,12 @@
 #define CLARKE_ALPHA            1/3
 #define CLARKE_BETA             1/sqrt(3)
 
+/*
+ * SPACE VECTOR MODULATION PARAMETERS
+ * Found from svgen.h
+ */
+#define INV_DC_BUS_VOLTAGE      1 / 600
+
 foc_ctrl_t *foc_ctrl_init()
 {
     /* Create FOC struct */
@@ -38,6 +44,11 @@ foc_ctrl_t *foc_ctrl_init()
     controller->ipark_transform = malloc(sizeof(IPARK_Obj));
     assert(controller->ipark_transform);
     IPARK_setup(controller->ipark_transform, 2.0); //TODO: What is "Th"
+
+    /* Initialize Space Vector Modulation */
+    controller->svm = malloc(sizeof(SVGEN_Obj));
+    assert(controller->svm);
+    SVGEN_setup(controller->svm, INV_DC_BUS_VOLTAGE);
 
     return controller;
 }
@@ -82,6 +93,7 @@ void vFOCctrl(void *pv_params)
             PARK_run(controller->park_transform, alpha_beta, id_iq);
             //TODO: Add PI controller for both d and q
             IPARK_run(controller->ipark_transform, id_iq, alpha_beta);
+            SVGEN_run(controller->svm, alpha_beta, calc_cmd);
 
             /* Publish to Onboard Temp Queue */
             osMessageQueuePut(controller->command_queue, calc_cmd, 0U, 0U);
