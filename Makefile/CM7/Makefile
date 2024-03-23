@@ -50,6 +50,7 @@ C_SOURCES =  \
 ../../CM7/Core/Src/controls/ipark.c \
 ../../CM7/Core/Src/controls/svgen_current.c \
 ../../CM7/Core/Src/controls/svgen.c \
+../../CM7/Core/Src/controls/pid.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc_ex.c \
