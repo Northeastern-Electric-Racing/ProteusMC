@@ -9,6 +9,22 @@
 #include "svgen.h"
 #include "pid.h"
 
+typedef struct {
+    enum {
+        FOCDATA_PHASE_CURRENT,
+        FOCDATA_ROTOR_POSITION,
+        FOCDATA_DC_BUS_VOLTAGE,
+        FOCDATA_REF_CURRENT
+    } type;
+
+    union {
+        int16_t phase_currents[3];
+        float rotor_position;
+        float dc_bus_voltage;
+        float ref_current;
+    } payload;
+} foc_data_t;
+
 /* Struct to contain parameters for field oriented control */
 typedef struct {
     osThreadId_t foc_ctrl;
@@ -26,7 +42,7 @@ typedef struct {
 foc_ctrl_t *foc_ctrl_init();
 
 /* Enqueue a single frame of controller observation */
-osStatus_t foc_queue_frame(foc_ctrl_t *controller, int16_t phase_currents[3]);
+osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *phase_currents);
 
 /* Wait for a command to be sent from the controller */
 osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, int16_t duty_cycles[3]);

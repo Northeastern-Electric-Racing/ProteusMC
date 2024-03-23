@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
+#include <string.h>
 
-#define INBOUND_QUEUE_SIZE 15
+#define INBOUND_QUEUE_SIZE 30
+#define OUTBOUND_QUEUE_SIZE 15
 
 /*
  * CLARKE TRANSFORM PARAMETERS
@@ -13,12 +15,6 @@
 #define NUM_CURRENT_SENSORS     3
 #define CLARKE_ALPHA            1/3
 #define CLARKE_BETA             1/sqrt(3)
-
-/*
- * SPACE VECTOR MODULATION PARAMETERS
- * Found from svgen.h
- */
-#define INV_DC_BUS_VOLTAGE      1 / 600
 
 enum {
     D,
@@ -30,8 +26,8 @@ foc_ctrl_t *foc_ctrl_init()
     /* Create FOC struct */
     foc_ctrl_t *controller = malloc(sizeof(foc_ctrl_t));
     assert(controller);
-    controller->data_queue = osMessageQueueNew(INBOUND_QUEUE_SIZE, sizeof(int[3]), NULL);
-    controller->command_queue = osMessageQueueNew(INBOUND_QUEUE_SIZE, sizeof(int[3]), NULL);
+    controller->data_queue = osMessageQueueNew(INBOUND_QUEUE_SIZE, sizeof(foc_data_t), NULL);
+    controller->command_queue = osMessageQueueNew(OUTBOUND_QUEUE_SIZE, sizeof(int[3]), NULL);
 
     /* Initialize Clarke Transform */
     controller->clarke_transform = malloc(sizeof(CLARKE_Obj));
@@ -43,17 +39,14 @@ foc_ctrl_t *foc_ctrl_init()
     /* Initialize Park Transform */
     controller->park_transform = malloc(sizeof(PARK_Obj));
     assert(controller->park_transform);
-    PARK_setup(controller->park_transform, 2.0); //TODO: What is "Th"
 
     /* Initialize Inverse Park Transform */
     controller->ipark_transform = malloc(sizeof(IPARK_Obj));
     assert(controller->ipark_transform);
-    IPARK_setup(controller->ipark_transform, 2.0); //TODO: What is "Th"
 
     /* Initialize Space Vector Modulation */
     controller->svm = malloc(sizeof(SVGEN_Obj));
     assert(controller->svm);
-    SVGEN_setup(controller->svm, INV_DC_BUS_VOLTAGE);
 
     /* Iniitialize PIDs */
     //TODO: Actually initialize values of PID
@@ -70,12 +63,12 @@ foc_ctrl_t *foc_ctrl_init()
     return controller;
 }
 
-osStatus_t foc_queue_frame(foc_ctrl_t *controller, int16_t phase_currents[3])
+osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *data)
 {
     if (!controller->data_queue)
         return -1;
 
-    return osMessageQueuePut(controller->data_queue, phase_currents, 0U, 0U);
+    return osMessageQueuePut(controller->data_queue, data, 0U, 0U);
 }
 
 osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, int16_t duty_cycles[3])
@@ -90,7 +83,11 @@ void vFOCctrl(void *pv_params)
 {
     osStatus_t status;
 
-    int16_t phase_buf[3];
+    /* Source data for calculations */
+    foc_data_t msg;
+    float ref_current;
+
+    /* Intermediate values for calculation */
     float phase_currents[3];
     float alpha_beta[2];
     float id_iq[2];
@@ -104,24 +101,50 @@ void vFOCctrl(void *pv_params)
     for (;;)
     {
         /* Wait until a message is in the queue, send messages when they are in the queue */
-        status = osMessageQueueGet(controller->data_queue, phase_buf, NULL, osWaitForever);
-        if (status == osOK)
-        {
-            //TODO: Convert raw ADC reading of phases to current values
-            CLARKE_run(controller->clarke_transform, phase_currents, alpha_beta);
-            PARK_run(controller->park_transform, alpha_beta, id_iq);
+        status = osMessageQueueGet(controller->data_queue, &msg, NULL, osWaitForever);
+        if (status == osOK) {
+            /* Decode message data */
+            switch (msg.type) {
+                /* If its a phase current measurement, run control pipeline */
+                case FOCDATA_PHASE_CURRENT:
+                    //TODO: Convert raw ADC reading of phases to current values
+                    CLARKE_run(controller->clarke_transform, phase_currents, alpha_beta);
+                    PARK_run(controller->park_transform, alpha_beta, id_iq);
 
-            //TODO: Here, adjust I_q based on the desired current, reference for I_d is always 0
-            //TODO: Set new value to id_iq_reg[Q]
+                    /*
+                     * Here, adjust I_q based on the desired current, reference for I_d is always 0
+                     * I_q is actually being varied
+                     */
+                    PID_run_parallel(controller->q_pid, 0, id_iq[D], 0, &id_iq_pid[D]);
+                    PID_run_parallel(controller->d_pid, ref_current, id_iq[Q], 0, &id_iq_pid[Q]);
 
-            PID_run_parallel(controller->q_pid, id_iq_ref[D], id_iq[D], 0, &id_iq_pid[D]);
-            PID_run_parallel(controller->d_pid, id_iq_ref[Q], id_iq[Q], 0, &id_iq_pid[Q]);
+                    IPARK_run(controller->ipark_transform, id_iq, alpha_beta);
+                    SVGEN_run(controller->svm, alpha_beta, calc_cmd);
 
-            IPARK_run(controller->ipark_transform, id_iq, alpha_beta);
-            SVGEN_run(controller->svm, alpha_beta, calc_cmd);
+                    /* Send out duty cycle command */
+                    osMessageQueuePut(controller->command_queue, calc_cmd, 0U, 0U);
+                    break;
 
-            /* Publish to Onboard Temp Queue */
-            osMessageQueuePut(controller->command_queue, calc_cmd, 0U, 0U);
+                /* If its a new rotor position, update Park and Inverse Park Transforms */
+                case FOCDATA_ROTOR_POSITION:
+                    PARK_setup(controller->park_transform, msg.payload.rotor_position);
+                    IPARK_setup(controller->ipark_transform, msg.payload.rotor_position);
+                    break;
+
+                /* If its a new DC bus voltage reading, update the Space Vector Modulation block */
+                case FOCDATA_DC_BUS_VOLTAGE:
+                    SVGEN_setup(controller->svm, 1/msg.payload.dc_bus_voltage);
+                    break;
+
+                /* If its a new desired current, update the new reference current */
+                case FOCDATA_REF_CURRENT:
+                    ref_current = msg.payload.ref_current;
+                    break;
+
+                default:
+                    /* Unknown data type */
+                    break;
+            }
         }
 
         /* Yield to other tasks */
