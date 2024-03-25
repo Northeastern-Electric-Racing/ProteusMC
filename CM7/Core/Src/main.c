@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
+#include "queues.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -77,7 +78,7 @@ const osThreadAttr_t defaultTask_attributes = {
     .priority = (osPriority_t)osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
-
+osMessageQueueId_t phase_current_queue;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -191,8 +192,8 @@ int main(void)
   /* USER CODE BEGIN RTOS_MUTEX */
   // lmao we aren't adding mutexes here but need to init stuff after the kernel initializes
 
-  gatedriver_t *gatedrv_left = gatedrv_init(&htim1, &hadc1, &hspi1);
-  gatedriver_t *gatedrv_right = gatedrv_init(&htim2, &hadc3, &hspi3);
+  gatedriver_t *gatedrv_left = gatedrv_init(&htim1, &hadc1, &hdma_adc1, &hspi1);
+  gatedriver_t *gatedrv_right = gatedrv_init(&htim2, &hadc3, &hdma_adc3, &hspi3);
 
   ssi_encoder_t *ssi_encoder_left = ssi_encoder_init(&hspi2);
   ssi_encoder_t *ssi_encoder_right = ssi_encoder_init(&hspi4);
@@ -207,7 +208,7 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
+  phase_current_queue = osMessageQueueNew(PHASE_CURRENT_QUEUE_SIZE, sizeof(phase_current_t), NULL);
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
