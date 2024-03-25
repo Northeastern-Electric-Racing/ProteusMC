@@ -27,6 +27,7 @@
 #include "gatedriver.h"
 #include "fault.h"
 #include "ssi_encoder.h"
+#include "inc_encoder.h"
 
 /* USER CODE END Includes */
 
@@ -196,6 +197,10 @@ int main(void)
 
   ssi_encoder_t *ssi_encoder_left = ssi_encoder_init(&hspi2);
   ssi_encoder_t *ssi_encoder_right = ssi_encoder_init(&hspi4);
+
+  inc_encoder_t *inc_encoder_left = inc_encoder_init(&htim2, ENC1_Z_Pin);
+  inc_encoder_t *inc_encoder_right = inc_encoder_init(&htim4, ENC2_Z_Pin);
+
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
@@ -1094,8 +1099,9 @@ static void MX_DMA_Init(void)
  */
 static void MX_GPIO_Init(void)
 {
-  /* USER CODE BEGIN MX_GPIO_Init_1 */
-  /* USER CODE END MX_GPIO_Init_1 */
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+/* USER CODE BEGIN MX_GPIO_Init_1 */
+/* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
@@ -1107,8 +1113,27 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
 
-  /* USER CODE BEGIN MX_GPIO_Init_2 */
-  /* USER CODE END MX_GPIO_Init_2 */
+  /*Configure GPIO pin : ENC1_Z_Pin */
+  GPIO_InitStruct.Pin = ENC1_Z_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(ENC1_Z_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : ENC2_Z_Pin */
+  GPIO_InitStruct.Pin = ENC2_Z_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(ENC2_Z_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI2_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+/* USER CODE BEGIN MX_GPIO_Init_2 */
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
