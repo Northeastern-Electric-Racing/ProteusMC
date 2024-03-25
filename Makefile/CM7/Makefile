@@ -42,8 +42,6 @@ C_SOURCES =  \
 ../../CM7/Core/Src/stm32h7xx_hal_msp.c \
 ../../CM7/Core/Src/gatedriver.c \
 ../../CM7/Core/Src/foc_ctrl.c \
-../../CM7/Core/Src/state_machine.c \
-../../CM7/Core/Src/fault.c \
 ../../CM7/Core/Src/ssi_encoder.c \
 ../../CM7/Core/Src/controls/clarke.c \
 ../../CM7/Core/Src/controls/park.c \
