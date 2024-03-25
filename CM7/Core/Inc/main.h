@@ -60,12 +60,6 @@ void MX_FDCAN1_Init(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define ENC1_Z_Pin GPIO_PIN_2
-#define ENC1_Z_GPIO_Port GPIOA
-#define ENC1_Z_EXTI_IRQn EXTI2_IRQn
-#define ENC2_Z_Pin GPIO_PIN_14
-#define ENC2_Z_GPIO_Port GPIOD
-#define ENC2_Z_EXTI_IRQn EXTI15_10_IRQn
 
 /* USER CODE BEGIN Private defines */
 
