@@ -407,9 +407,9 @@ bool UI_SetReg(UI_Handle_t *pHandle, MC_Protocol_REG_t bRegID, int32_t wValue);
   * @param  pHandle pointer on the target component handle.
   * @param  bRegID Code of register to be updated. Valid code is one of the
   *         MC_PROTOCOL_REG_xxx values exported by UserInterfaceClass.
-  * @param  success if not NULL, the function sets success to true if tregister
-  *         @p bRegID is known bby the application and false otherwise.
-  *
+  * @param  success if not NULL, the function sets success to true if tregister 
+  *         @p bRegID is known bby the application and false otherwise. 
+  *           
   * @retval int32_t is the current value of register bRegID.
   *
   * If @p success is set to false by the function, then the return value is meaningless.

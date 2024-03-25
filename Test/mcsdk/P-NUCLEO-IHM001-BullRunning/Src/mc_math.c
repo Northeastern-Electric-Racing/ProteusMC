@@ -337,7 +337,7 @@ __attribute__( ( section ( ".ccmram" ) ) )
 
 __weak Trig_Components MCM_Trig_Functions( int16_t hAngle )
 {
-
+  
   int32_t shindex;
   uint16_t uhindex;
 
@@ -396,7 +396,7 @@ __weak int32_t MCM_Sqrt( int32_t wInput )
   {
   uint8_t biter = 0u;
   int32_t wtemproot;
-
+    
     if ( wInput <= ( int32_t )2097152 )
     {
       wtemproot = ( int32_t )128;

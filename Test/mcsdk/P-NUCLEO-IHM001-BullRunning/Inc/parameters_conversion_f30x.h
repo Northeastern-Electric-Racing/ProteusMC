@@ -18,14 +18,14 @@
   *
   ******************************************************************************
   */
-
+  
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __PARAMETERS_CONVERSION_F30X_H
 #define __PARAMETERS_CONVERSION_F30X_H
 #include "mc_stm_types.h"
 /************************* CPU & ADC PERIPHERAL CLOCK CONFIG ******************/
 #define SYSCLK_FREQ      72000000uL
-#define TIM_CLOCK_DIVIDER  1
+#define TIM_CLOCK_DIVIDER  1 
 #define ADV_TIM_CLK_MHz  144
 #define ADC_CLK_MHz     72
 #define HALL_TIM_CLK    72000000uL
@@ -38,26 +38,26 @@
 
 #define TIMx_BRK_M1_IRQHandler TIM1_BRK_TIM15_IRQHandler
 
-/*************************  ADC Physical characteristics  *********************/
+/*************************  ADC Physical characteristics  *********************/	
 #define ADC_TRIG_CONV_LATENCY_CYCLES 3.5
 #define ADC_SAR_CYCLES 13u
 
 #define M1_VBUS_SW_FILTER_BW_FACTOR      6u
 
 #define OPAMP1_InvertingInput_PC5         LL_OPAMP_INPUT_INVERT_IO0
-#define OPAMP1_InvertingInput_PA3         LL_OPAMP_INPUT_INVERT_IO1
+#define OPAMP1_InvertingInput_PA3         LL_OPAMP_INPUT_INVERT_IO1 
 #define OPAMP1_InvertingInput_PGA         LL_OPAMP_INPUT_INVERT_CONNECT_NO
 #define OPAMP1_InvertingInput_FOLLOWER    LL_OPAMP_MODE_FOLLOWER
 #define OPAMP2_InvertingInput_PC5         LL_OPAMP_INPUT_INVERT_IO0
-#define OPAMP2_InvertingInput_PA5         LL_OPAMP_INPUT_INVERT_IO1
+#define OPAMP2_InvertingInput_PA5         LL_OPAMP_INPUT_INVERT_IO1 
 #define OPAMP2_InvertingInput_PGA         LL_OPAMP_INPUT_INVERT_CONNECT_NO
 #define OPAMP2_InvertingInput_FOLLOWER    LL_OPAMP_MODE_FOLLOWER
 #define OPAMP3_InvertingInput_PB10        LL_OPAMP_INPUT_INVERT_IO0
-#define OPAMP3_InvertingInput_PB2         LL_OPAMP_INPUT_INVERT_IO1
+#define OPAMP3_InvertingInput_PB2         LL_OPAMP_INPUT_INVERT_IO1 
 #define OPAMP3_InvertingInput_PGA         LL_OPAMP_INPUT_INVERT_CONNECT_NO
 #define OPAMP3_InvertingInput_FOLLOWER    LL_OPAMP_MODE_FOLLOWER
 #define OPAMP4_InvertingInput_PB10        LL_OPAMP_INPUT_INVERT_IO0
-#define OPAMP4_InvertingInput_PD8         LL_OPAMP_INPUT_INVERT_IO1
+#define OPAMP4_InvertingInput_PD8         LL_OPAMP_INPUT_INVERT_IO1 
 #define OPAMP4_InvertingInput_PGA         LL_OPAMP_INPUT_INVERT_CONNECT_NO
 #define OPAMP4_InvertingInput_FOLLOWER    LL_OPAMP_MODE_FOLLOWER
 
@@ -122,7 +122,7 @@
 
 /* USER CODE BEGIN Additional parameters */
 
-/* USER CODE END Additional parameters */
+/* USER CODE END Additional parameters */  
 
 #endif /*__PARAMETERS_CONVERSION_F30X_H*/
 

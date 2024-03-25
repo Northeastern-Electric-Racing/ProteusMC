@@ -18,7 +18,7 @@
   *
   ******************************************************************************
   */
-
+  
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __PARAMETERS_CONVERSION_H
 #define __PARAMETERS_CONVERSION_H
@@ -34,11 +34,11 @@
 /************************* CONTROL FREQUENCIES & DELAIES **********************/
 #define TF_REGULATION_RATE 	(uint32_t) ((uint32_t)(PWM_FREQUENCY)/(REGULATION_EXECUTION_RATE))
 
-/* TF_REGULATION_RATE_SCALED is TF_REGULATION_RATE divided by PWM_FREQ_SCALING to allow more dynamic */
+/* TF_REGULATION_RATE_SCALED is TF_REGULATION_RATE divided by PWM_FREQ_SCALING to allow more dynamic */ 
 #define TF_REGULATION_RATE_SCALED (uint16_t) ((uint32_t)(PWM_FREQUENCY)/(REGULATION_EXECUTION_RATE*PWM_FREQ_SCALING))
 
 /* DPP_CONV_FACTOR is introduce to compute the right DPP with TF_REGULATOR_SCALED  */
-#define DPP_CONV_FACTOR (65536/PWM_FREQ_SCALING)
+#define DPP_CONV_FACTOR (65536/PWM_FREQ_SCALING) 
 
 #define REP_COUNTER 			(uint16_t) ((REGULATION_EXECUTION_RATE *2u)-1u)
 
@@ -62,10 +62,10 @@
 #define MAX_BEMF_VOLTAGE  (uint16_t)((MAX_APPLICATION_SPEED_RPM * 1.2 *\
                            MOTOR_VOLTAGE_CONSTANT*SQRT_2)/(1000u*SQRT_3))
 /*max phase voltage, 0-peak Volts*/
-#define MAX_VOLTAGE (int16_t)((ADC_REFERENCE_VOLTAGE/SQRT_3)/VBUS_PARTITIONING_FACTOR)
+#define MAX_VOLTAGE (int16_t)((ADC_REFERENCE_VOLTAGE/SQRT_3)/VBUS_PARTITIONING_FACTOR) 
 
 #define MAX_CURRENT (ADC_REFERENCE_VOLTAGE/(2*RSHUNT*AMPLIFICATION_GAIN))
-#define OBS_MINIMUM_SPEED_UNIT    (uint16_t) ((OBS_MINIMUM_SPEED_RPM*SPEED_UNIT)/_RPM)
+#define OBS_MINIMUM_SPEED_UNIT    (uint16_t) ((OBS_MINIMUM_SPEED_RPM*SPEED_UNIT)/_RPM)  
 
 #define MAX_APPLICATION_SPEED_UNIT ((MAX_APPLICATION_SPEED_RPM*SPEED_UNIT)/_RPM)
 #define MIN_APPLICATION_SPEED_UNIT ((MIN_APPLICATION_SPEED_RPM*SPEED_UNIT)/_RPM)
@@ -77,7 +77,7 @@
 #define C4 (int32_t) GAIN2
 #define C5 (int32_t)((((int16_t)F1)*MAX_VOLTAGE)/(LS*MAX_CURRENT*TF_REGULATION_RATE))
 
-#define PERCENTAGE_FACTOR    (uint16_t)(VARIANCE_THRESHOLD*128u)
+#define PERCENTAGE_FACTOR    (uint16_t)(VARIANCE_THRESHOLD*128u)      
 #define HFI_MINIMUM_SPEED    (uint16_t) (HFI_MINIMUM_SPEED_RPM/6u)
 
 #define MAX_APPLICATION_SPEED_UNIT2 ((MAX_APPLICATION_SPEED_RPM2*SPEED_UNIT)/_RPM)
@@ -166,9 +166,9 @@
 
 #define UI_CFGOPT_PFC_ENABLE
 
-/*******************************************************************************
-  * UI configurations settings. It can be manually overwritten if special
-  * configuartion is required.
+/******************************************************************************* 
+  * UI configurations settings. It can be manually overwritten if special 
+  * configuartion is required. 
 *******************************************************************************/
 
 /* Specific options of UI */

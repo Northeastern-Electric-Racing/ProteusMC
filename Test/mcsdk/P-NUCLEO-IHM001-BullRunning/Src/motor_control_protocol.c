@@ -97,12 +97,12 @@ MPInfo_t MPInfo = {0, 0};
 * @param  pDAC Pointer on DAC component.
 * @param  s_fwVer Pointer on string containing FW release version.
 */
-__weak void MCP_Init( MCP_Handle_t *pHandle,
+__weak void MCP_Init( MCP_Handle_t *pHandle, 
                FCP_Handle_t * pFCP,
-               FCP_SendFct_t fFcpSend,
-               FCP_ReceiveFct_t fFcpReceive,
-               FCP_AbortReceiveFct_t fFcpAbortReceive,
-               DAC_UI_Handle_t * pDAC,
+               FCP_SendFct_t fFcpSend, 
+               FCP_ReceiveFct_t fFcpReceive, 
+               FCP_AbortReceiveFct_t fFcpAbortReceive, 
+               DAC_UI_Handle_t * pDAC, 
                const char* s_fwVer )
 {
   pHandle->pFCP = pFCP;
@@ -521,7 +521,7 @@ __weak void MCP_ReceivedFrame(MCP_Handle_t *pHandle, uint8_t Code, uint8_t *buff
       bNoError = UI_ExecTorqueRamp(&pHandle->_Super, torque,duration);
     }
     break;
-
+    
   case MC_PROTOCOL_CODE_GET_REVUP_DATA:
     {
       uint8_t outBuff[8];
@@ -585,7 +585,7 @@ __weak void MCP_ReceivedFrame(MCP_Handle_t *pHandle, uint8_t Code, uint8_t *buff
       }
     }
     break;
-
+    
     case MC_PROTOCOL_CODE_GET_FW_VERSION:
     {
       /* Get Firmware Version */
@@ -595,7 +595,7 @@ __weak void MCP_ReceivedFrame(MCP_Handle_t *pHandle, uint8_t Code, uint8_t *buff
       {
         outBuff[i] = pHandle->s_fwVer[i];
       }
-
+      
       for (; i < 32; i++)
       {
         outBuff[i] = 0;
