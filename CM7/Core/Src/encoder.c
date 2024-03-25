@@ -15,6 +15,7 @@ encoder_t *encoder_init(SPI_HandleTypeDef *spi_handle, TIM_HandleTypeDef *timer_
 {
     // make sure the handle exists
     assert(spi_handle);
+    assert(timer_handle);
 
     // allocate new struct
     encoder_t *encoder = malloc(sizeof(encoder_t));
