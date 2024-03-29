@@ -26,7 +26,6 @@
 
 #include "proteus_config.h"
 #include "gatedriver.h"
-#include "fault.h"
 #include "ssi_encoder.h"
 
 /* USER CODE END Includes */
@@ -224,7 +223,6 @@ int main(void)
   /* USER CODE END RTOS_EVENTS */
 
   /* Control Logic */
-  fault_handle = osThreadNew(vFaultHandler, NULL, &fault_handle_attributes);
 
   /* Start scheduler */
   osKernelStart();

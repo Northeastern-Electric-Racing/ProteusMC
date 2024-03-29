@@ -29,7 +29,7 @@ typedef struct
 /* Function to queue a fault */
 int queue_fault(fault_data_t *fault_data);
 
-/* Defining Fault Hanlder Task */
+/* Defining Fault Handler Task */
 void vFaultHandler(void *pv_params);
 extern osThreadId_t fault_handle;
 extern const osThreadAttr_t fault_handle_attributes;
