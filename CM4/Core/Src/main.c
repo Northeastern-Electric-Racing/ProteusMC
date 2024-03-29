@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
+#include <serial_monitor.h>
 #include <fault.h>
 #include <state_machine.h>
 
@@ -84,7 +85,28 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#ifdef __GNUC__
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif
 
+PUTCHAR_PROTOTYPE
+{
+  HAL_UART_Transmit(&huart4, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+  return ch;
+}
+
+int _write(int file, char *ptr, int len)
+{
+  int DataIdx;
+
+  for (DataIdx = 0; DataIdx < len; DataIdx++)
+  {
+    __io_putchar(*ptr++);
+  }
+  return len;
+}
 /* USER CODE END 0 */
 
 /**
@@ -158,6 +180,8 @@ int main(void)
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
+  serial_monitor_handle = osThreadNew(vSerialMonitor, NULL, &serial_monitor_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
