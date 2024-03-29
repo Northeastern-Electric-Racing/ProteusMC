@@ -20,6 +20,8 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include <serial_monitor.h>
+#include <fault.h>
+#include <state_machine.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -188,6 +190,10 @@ int main(void)
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
+
+  /* Control Logic */
+  fault_handle = osThreadNew(vFaultHandler, NULL, &fault_handle_attributes);
+  sm_director_handle = osThreadNew(vStateMachineDirector, NULL, &sm_director_attributes);
 
   /* Start scheduler */
   osKernelStart();

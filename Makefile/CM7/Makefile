@@ -42,9 +42,14 @@ C_SOURCES =  \
 ../../CM7/Core/Src/stm32h7xx_hal_msp.c \
 ../../CM7/Core/Src/gatedriver.c \
 ../../CM7/Core/Src/foc_ctrl.c \
-../../CM7/Core/Src/state_machine.c \
-../../CM7/Core/Src/fault.c \
 ../../CM7/Core/Src/ssi_encoder.c \
+../../CM7/Core/Src/controls/clarke.c \
+../../CM7/Core/Src/controls/park.c \
+../../CM7/Core/Src/controls/ipark.c \
+../../CM7/Core/Src/controls/svgen_current.c \
+../../CM7/Core/Src/controls/svgen.c \
+../../CM7/Core/Src/controls/pid.c \
+../../CM7/Core/Src/controls/filter_fo.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc_ex.c \
@@ -158,7 +163,8 @@ C_INCLUDES =  \
 -I../../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 \
 -I../../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F \
 -I../../Drivers/CMSIS/Device/ST/STM32H7xx/Include \
--I../../Drivers/CMSIS/Include
+-I../../Drivers/CMSIS/Include \
+-I../../CM7/Core/Inc/controls
 
 
 # compile gcc flags
