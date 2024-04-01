@@ -649,13 +649,15 @@ PID_run_parallel(PID_Handle handle, const float refValue,
     // Compute the proportional output
     //
     Up = Kp * Error;
-    
+
     //
     // Compute the integral output
     //
-    Ui = MATH_sat(Ui + (Ki * Error),outMax,outMin);
+    Ui = Ui + (Ki * Error);
+    Ui = (Ui > outMax) ? outMax : Ui;
+    Ui = (Ui < outMin) ? outMin : Ui;
 
-    Ud_tmp = Kd * Error;                               
+    Ud_tmp = Kd * Error;
     Ud = FILTER_FO_run(obj->derFilterHandle,Ud_tmp);
 
     //
@@ -669,7 +671,10 @@ PID_run_parallel(PID_Handle handle, const float refValue,
     //
     // Saturate the output
     //
-    *pOutValue = MATH_sat(Up + Ui + Ud + ffwdValue,outMax,outMin);
+    float out = Up + Ui + Ud + ffwdValue;
+    out = (out > outMax) ? outMax : out;
+    out = (out < outMin) ? outMin : out;
+    *pOutValue = out;
 
     return;
 } // end of PID_run_parallel() function
@@ -718,7 +723,9 @@ PID_run_series(PID_Handle handle, const float refValue,
     //
     // Compute the integral output with saturation
     //
-    Ui = MATH_sat(Ui + (Ki * Up),outMax,outMin);
+    Ui = Ui + (Ki * Up);
+    Ui = (Ui > outMax) ? outMax : Ui;
+    Ui = (Ui < outMin) ? outMin : Ui;
 
     //
     // Compute the derivative term
@@ -734,7 +741,10 @@ PID_run_series(PID_Handle handle, const float refValue,
     //
     // Saturate the output
     //
-    *pOutValue = MATH_sat(Up + Ui + Ud + ffwdValue,outMax,outMin);
+    float out = Up + Ui + Ud + ffwdValue;
+    out = (out > outMax) ? outMax : out;
+    out = (out < outMin) ? outMin : out;
+    *pOutValue = out;
 
     return;
 } // end of PID_run_series() function
