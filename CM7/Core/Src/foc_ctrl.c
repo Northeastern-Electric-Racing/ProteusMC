@@ -17,6 +17,9 @@
 #define CLARKE_ALPHA            1/3
 #define CLARKE_BETA             1/sqrt(3)
 
+#define OPEN_LOOP_MAX_AMPLITUDE	0.05	/* max duty cycle */
+#define OPEN_LOOP_RAMP_TIME		1		/* seconds */
+
 enum {
 	D,
 	Q
@@ -60,6 +63,8 @@ foc_ctrl_t *foc_ctrl_init()
 	//PID_setGains(controller->q_pid, kp, ki, kd);
 	//PID_setMinMax(controller->q_pid);
 
+	controller->last_run_ms = HAL_GetTick();
+
 	return controller;
 }
 
@@ -82,30 +87,25 @@ osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, pwm_signal_t duty_cycles[3])
 static void open_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
 {
 	/* Note: assuming we start from 0 angular velocity */
-
 	pwm_signal_t duty_cmds[3];
 
 	if (msg->type == FOCDATA_ROTOR_POSITION) {
-		//TODO: Calculate dt based on time of previous reading
-		float amplitude = 0.0;
-		//f_startup += (F_STARTUP_MAX - F_STARTUP_INITIAL) / (SAMPLING_FREQUENCY * 5) * dt;
-		//amplitude += (MAX_AMPLITUDE - 0) / (SAMPLING_FREQUENCY * 5) * dt;
-		//if (amplitude > MAX_AMPLITUDE) amplitude = MAX_AMPLITUDE;
+		/* Assuming tick is set to 1 ms */
+		uint32_t dt = HAL_GetTick() - controller->last_run_ms;
 
-		/* Generate three-phase voltages */
-		float V_a = amplitude * sin(controller->rotor_position);
-		float V_b = amplitude * sin(controller->rotor_position - 2 * M_PI / 3);
-		float V_c = amplitude * sin(controller->rotor_position + 2 * M_PI / 3);
+		/* Ramp amplitude */
+		controller->open_loop_amplitude += ((OPEN_LOOP_MAX_AMPLITUDE - 0) / OPEN_LOOP_RAMP_TIME) * dt;
 
-		// Convert voltages to PWM duty cycles
-		duty_cmds[0] = (V_a / controller->dc_bus_voltage + 1) / 2;
-		duty_cmds[1] = (V_b / controller->dc_bus_voltage + 1) / 2;
-		duty_cmds[2] = (V_c / controller->dc_bus_voltage + 1) / 2;
+		/* Clamp signal */
+		if (controller->open_loop_amplitude > OPEN_LOOP_MAX_AMPLITUDE)
+			controller->open_loop_amplitude = OPEN_LOOP_MAX_AMPLITUDE;
+
+		/* Generate three-phase duty cycles */
+		duty_cmds[0] = controller->open_loop_amplitude * sin(controller->rotor_position);
+		duty_cmds[1] = controller->open_loop_amplitude * sin(controller->rotor_position - 2 * M_PI / 3);
+		duty_cmds[2] = controller->open_loop_amplitude * sin(controller->rotor_position + 2 * M_PI / 3);
 
 		osMessageQueuePut(controller->command_queue, duty_cmds, 0U, 0U);
-	}
-	else if (msg->type == FOCDATA_DC_BUS_VOLTAGE) {
-		controller->dc_bus_voltage = msg->payload.dc_bus_voltage;
 	}
 }
 
@@ -116,7 +116,7 @@ static void closed_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
 	float phase_currents[3];
 	float alpha_beta[2];
 	float id_iq[2];
-	float id_iq_ref[2] = {0, 0}; // Reference d-axis and q-axis currents
+	float id_iq_ref[2] = {0, 0};
 	float id_iq_pid[2];
 	float v_abc_pu[3];
 
@@ -125,7 +125,7 @@ static void closed_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
 		/* If its a phase current measurement, run control pipeline */
 		case FOCDATA_PHASE_CURRENT:
 			//TODO: Convert raw ADC reading of phases to current values
-			CLARKE_run(controller->clarke_transform, phase_currents, alpha_beta);
+			CLARKE_run(controller->clarke_transform, msg->payload.phase_currents, alpha_beta);
 			PARK_run(controller->park_transform, alpha_beta, id_iq);
 
 			/*
@@ -189,6 +189,7 @@ void vFOCctrl(void *pv_params)
 				case START:
 					/* Open Loop Startup Procedure */
 					open_loop_ctrl(controller, &msg);
+					controller->last_run_ms = HAL_GetTick();
 					break;
 				case START_RUN:
 					/* Ensure ready to begin closed loop control */
@@ -205,6 +206,8 @@ void vFOCctrl(void *pv_params)
 				case STOP_IDLE:
 				case FAULTED:
 					/* Do Nothing, Ensure signals are safe */
+					controller->open_loop_amplitude = 0.0;
+					controller->last_run_ms = HAL_GetTick();
 					//TODO: this
 					break;
 				case STOP_NOW:

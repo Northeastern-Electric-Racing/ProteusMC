@@ -1,6 +1,7 @@
 #include "state_machine.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <assert.h>
 
 #define STATE_TRANS_QUEUE_SIZE 16
 
@@ -52,7 +53,7 @@ state_t get_state()
 
     osMutexRelease(proteus_state.state_mutex);
 
-    return proteus_state.current_state;
+    return ret;
 }
 
 void vStateMachineDirector(void *pv_params)

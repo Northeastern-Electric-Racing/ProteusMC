@@ -35,6 +35,8 @@ typedef struct {
 	float ref_current;
 	float dc_bus_voltage;
 	float rotor_position;
+	uint32_t last_run_ms;
+	float open_loop_amplitude;
 
 	//static const float K = /* constant value used in your control system */;
 	//static const float ramp_time = 3.0f; // example ramp time in seconds
