@@ -38,12 +38,6 @@ typedef struct {
 	uint32_t last_run_ms;
 	float open_loop_amplitude;
 
-	//static const float K = /* constant value used in your control system */;
-	//static const float ramp_time = 3.0f; // example ramp time in seconds
-	//static const float correction_factor = /* your correction factor */;
-	//static float speed_ref_rpm; // the reference speed in RPM
-	//static float amplitude; // amplitude for sine wave generation
-
 	PID_Obj *q_pid;
 	PID_Obj *d_pid;
 	CLARKE_Obj *clarke_transform;
