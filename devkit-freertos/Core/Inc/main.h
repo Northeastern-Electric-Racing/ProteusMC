@@ -31,12 +31,12 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "foc_ctrl.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+extern foc_ctrl_t *foc_controller;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
