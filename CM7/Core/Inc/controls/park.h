@@ -287,8 +287,8 @@ PARK_setup(PARK_Handle handle, const float Th)
     obj->sinTh = CLAsin_inline(Th);
     obj->cosTh = CLAcos_inline(Th);
 #else
-    obj->sinTh = __sin(Th);
-    obj->cosTh = __cos(Th);
+    obj->sinTh = sin(Th);
+    obj->cosTh = cos(Th);
 #endif // __TMS320C28XX_CLA__
 
     return;

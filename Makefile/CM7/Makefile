@@ -69,6 +69,8 @@ C_SOURCES =  \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_hrtim.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim.c \
 ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim_ex.c \
+../../Common/Src/state_machine.c \
+../../Common/Src/fault.c \
 ../../Common/Src/system_stm32h7xx_dualcore_boot_cm4_cm7.c \
 ../../Middlewares/Third_Party/FreeRTOS/Source/croutine.c \
 ../../Middlewares/Third_Party/FreeRTOS/Source/event_groups.c \
