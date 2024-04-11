@@ -2,7 +2,7 @@ name: proteus
 
 services:
     ner-gcc-arm:
-        image: ghcr.io/northeastern-electric-racing/embedded-base:docker-compose
+        image: ghcr.io/northeastern-electric-racing/embedded-base:main
         build: .
         #network_mode: host
         privileged: true
@@ -14,9 +14,9 @@ services:
         #expose:
         #    - "3240"
         environment:
-            - DEBUG_PORT=/dev/ttyACM0
+            - DEBUG_PORT=/dev/ttyUSB0
             - STM_TARGET_NAME=stm32h7
         #    - USBIP_PORT=1-1.4        
         devices:
-            - "/dev/ttyACM0:/dev/ttyACM0"
+            - "/dev/ttyUSB0:/dev/ttyUSB0"
         
