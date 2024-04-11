@@ -59,6 +59,13 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+osThreadId_t focTaskHandle;
+const osThreadAttr_t focTask_attributes = {
+  .name = "focTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityRealtime,
+};
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -84,9 +91,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
   foc_data_t adc_data = {
     .type = FOCDATA_PHASE_CURRENT,
     .payload.phase_currents = {
-      hadc1.Instance->JDR1,
-      hadc1.Instance->JDR2,
-      hadc1.Instance->JDR3,
+      hadc->Instance->JDR1,
+      hadc->Instance->JDR2,
+      hadc->Instance->JDR3,
     }
   };
   foc_queue_frame(foc_controller, &adc_data);
@@ -156,6 +163,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  focTaskHandle = osThreadNew(vFOCctrl, (void *) foc_controller, &focTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -236,7 +244,6 @@ static void MX_ADC1_Init(void)
 
   /* USER CODE END ADC1_Init 0 */
 
-  ADC_ChannelConfTypeDef sConfig = {0};
   ADC_InjectionConfTypeDef sConfigInjected = {0};
 
   /* USER CODE BEGIN ADC1_Init 1 */
@@ -251,36 +258,13 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_LEFT;
-  hadc1.Init.NbrOfConversion = 2;
+  hadc1.Init.NbrOfConversion = 1;
   hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   hadc1.Init.LowPowerAutoWait = DISABLE;
   hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_1;
-  sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SingleDiff = ADC_SINGLE_ENDED;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
-  sConfig.OffsetNumber = ADC_OFFSET_NONE;
-  sConfig.Offset = 0;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Rank = ADC_REGULAR_RANK_2;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }
@@ -295,8 +279,8 @@ static void MX_ADC1_Init(void)
   sConfigInjected.ExternalTrigInjecConvEdge = ADC_EXTERNALTRIGINJECCONV_EDGE_RISING;
   sConfigInjected.ExternalTrigInjecConv = ADC_EXTERNALTRIGINJECCONV_T1_TRGO;
   sConfigInjected.AutoInjectedConv = DISABLE;
-  sConfigInjected.InjectedDiscontinuousConvMode = ENABLE;
-  sConfigInjected.QueueInjectedContext = ENABLE;
+  sConfigInjected.InjectedDiscontinuousConvMode = DISABLE;
+  sConfigInjected.QueueInjectedContext = DISABLE;
   sConfigInjected.InjectedOffset = 0;
   sConfigInjected.InjectedOffsetNumber = ADC_OFFSET_NONE;
   if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
@@ -611,6 +595,7 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+// reset encoder when external interrupt occurs (encoder index pulse)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
   htim2.Instance->CNT = 0;
 }
@@ -628,18 +613,33 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
   char buffer[100];
-  HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_4);
-  HAL_TIM_Base_Start(&htim1);
+
+  // enable ADC in interrupt mode
+  if(HAL_ADCEx_InjectedStart_IT(&hadc1) != HAL_OK)
+    Error_Handler();
+
+  // start pwm generation
+  if(HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4) != HAL_OK)
+    Error_Handler();
   
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
   /* Infinite loop */
   for(;;)
   {
     // enc_count = encoder_timer_get_count();
-    sprintf(buffer, "encoder count: %lu\r\n", htim2.Instance->CNT);
+    // sprintf(buffer, "encoder count: %lu\r\n", htim2.Instance->CNT);
     
-    HAL_UART_Transmit(&huart2, (const uint8_t *) &buffer, strlen(buffer), osWaitForever);
+    foc_data_t adc_data = {
+      .type = FOCDATA_ROTOR_POSITION,
+      .payload.rotor_position = 2 * M_PI * (htim2.Instance->CNT / (8192.0f))
+    };
+    foc_queue_frame(foc_controller, &adc_data);
+    // HAL_UART_Transmit(&huart2, (const uint8_t *) &buffer, strlen(buffer), osWaitForever);
     osDelay(10);
+    
+    // osThreadFlagsWait(1, osFlagsWaitAny, )
+    // sprintf(buffer, "adc conversion complete!\r\n");
+    // HAL_UART_Transmit(&huart2, (const uint8_t *) &buffer, strlen(buffer), osWaitForever);
   }
   /* USER CODE END 5 */
 }
