@@ -182,6 +182,31 @@ int main(void)
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
+  HAL_Delay(100);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
+  HAL_Delay(100);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
+  HAL_Delay(100);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
+  HAL_Delay(100);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
+  HAL_Delay(100);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+
+  HAL_Delay(100);
+
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
