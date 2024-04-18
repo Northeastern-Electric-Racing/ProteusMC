@@ -60,7 +60,7 @@ foc_ctrl_t *foc_ctrl_init();
 osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *phase_currents);
 
 /* Wait for a command to be sent from the controller */
-osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, uint16_t duty_cycles[3]);
+osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, float duty_cycles[3]);
 
 void vFOCctrl(void *pv_params);
 

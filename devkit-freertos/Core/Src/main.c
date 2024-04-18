@@ -58,21 +58,21 @@ osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityRealtime,
 };
 /* USER CODE BEGIN PV */
 osThreadId_t focTaskHandle;
 const osThreadAttr_t focTask_attributes = {
   .name = "FOC task",
-  .stack_size = 4096 * 4,
-  .priority = (osPriority_t) osPriorityRealtime,
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 
 osThreadId_t phaseActorHandler;
 const osThreadAttr_t phaseActor_attributes = {
   .name = "Phase Actor",
-  .stack_size = 4096 * 4,
-  .priority = (osPriority_t) osPriorityRealtime,
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 
 #ifdef __GNUC__
@@ -119,6 +119,7 @@ void vPhaseActor(void *pv_params);
 #define ADC_MAX_VALUE (0xFFFF)
 //                 (Scale ADC counts to voltage)  (Divide gain)   (V/R, R=0.33ohms)
 #define COUNTS_TO_AMPS ((3.3f / ADC_MAX_VALUE) * (1.0f / 1.53f) * (1.0f / 0.33f))
+#define COUNTS_TO_VBUS (3.3f / ADC_MAX_VALUE) / (9.31f / (169.0f + 9.31f));
 
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
   foc_data_t adc_data = {
@@ -137,7 +138,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
   uint16_t counts = HAL_ADC_GetValue(hadc);
 
   // VBUS is read through a voltage divider between a 169k and a 9.31k resistor
-  float vbus = (float) counts / (9.31f / (169.0f + 9.31f));
+  float vbus = counts * COUNTS_TO_VBUS;
 
   foc_data_t vbus_data = {
     .type = FOCDATA_DC_BUS_VOLTAGE,
@@ -196,7 +197,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   foc_controller = foc_ctrl_init();
-  gatedrv = gatedrv_init(&htim1);
+  gatedrv = gatedrv_init(&htim1, &hadc1);
 
   // start a vbus read, automatically queued into FOC block on completion
   start_vbus_read();
@@ -686,41 +687,31 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
+  float rotor_position;
   /* USER CODE BEGIN 5 */
-  char buffer[100];
-
-  // enable ADC in interrupt mode
-  if(HAL_ADCEx_InjectedStart_IT(&hadc1) != HAL_OK)
-    Error_Handler();
-
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
   /* Infinite loop */
   for(;;)
   {
-    // enc_count = encoder_timer_get_count();
-    // sprintf(buffer, "encoder count: %lu\r\n", htim2.Instance->CNT);
-
-    foc_data_t adc_data = {
+    rotor_position = 2 * M_PI * (htim2.Instance->CNT / (8192.0f));
+    
+    foc_data_t rotor_data = {
       .type = FOCDATA_ROTOR_POSITION,
-      .payload.rotor_position = 2 * M_PI * (htim2.Instance->CNT / (8192.0f))
+      .payload.rotor_position = rotor_position
     };
-    foc_queue_frame(foc_controller, &adc_data);
-    // HAL_UART_Transmit(&huart2, (const uint8_t *) &buffer, strlen(buffer), osWaitForever);
-    osDelay(10);
+    foc_queue_frame(foc_controller, &rotor_data);
 
-    // osThreadFlagsWait(1, osFlagsWaitAny, )
-    // sprintf(buffer, "adc conversion complete!\r\n");
-    // HAL_UART_Transmit(&huart2, (const uint8_t *) &buffer, strlen(buffer), osWaitForever);
+    printf("rotor position: %f\r\n", rotor_position);
+
+    osDelay(10);
   }
   /* USER CODE END 5 */
 }
 
 void vPhaseActor(void *pv_params)
 {
-	osStatus_t status;
-
 	/* Source data for calculations */
-	uint16_t duty_cycles[3];
+	float duty_cycles[3];
 
 	for (;;)
 	{

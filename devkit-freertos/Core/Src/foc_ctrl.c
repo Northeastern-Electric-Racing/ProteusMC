@@ -31,7 +31,7 @@ foc_ctrl_t *foc_ctrl_init()
 	foc_ctrl_t *controller = malloc(sizeof(foc_ctrl_t));
 	assert(controller);
 	controller->data_queue = osMessageQueueNew(INBOUND_QUEUE_SIZE, sizeof(foc_data_t), NULL);
-	controller->command_queue = osMessageQueueNew(OUTBOUND_QUEUE_SIZE, sizeof(uint16_t[3]), NULL);
+	controller->command_queue = osMessageQueueNew(OUTBOUND_QUEUE_SIZE, sizeof(float[3]), NULL);
 
 	/* Initialize Clarke Transform */
 	controller->clarke_transform = malloc(sizeof(CLARKE_Obj));
@@ -76,7 +76,7 @@ osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *data)
 	return osMessageQueuePut(controller->data_queue, data, 0U, 0U);
 }
 
-osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, uint16_t duty_cycles[3])
+osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, float duty_cycles[3])
 {
 	if (!controller->command_queue)
 		return -1;
@@ -101,9 +101,9 @@ static void open_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
 			controller->open_loop_amplitude = OPEN_LOOP_MAX_AMPLITUDE;
 
 		/* Generate three-phase duty cycles */
-		duty_cmds[0] = controller->open_loop_amplitude * sin(controller->rotor_position);
-		duty_cmds[1] = controller->open_loop_amplitude * sin(controller->rotor_position - 2 * M_PI / 3);
-		duty_cmds[2] = controller->open_loop_amplitude * sin(controller->rotor_position + 2 * M_PI / 3);
+		duty_cmds[0] = controller->open_loop_amplitude * sinf(controller->rotor_position);
+		duty_cmds[1] = controller->open_loop_amplitude * sinf(controller->rotor_position - 2 * M_PI / 3);
+		duty_cmds[2] = controller->open_loop_amplitude * sinf(controller->rotor_position + 2 * M_PI / 3);
 
 		osMessageQueuePut(controller->command_queue, duty_cmds, 0U, 0U);
 	}
@@ -112,13 +112,15 @@ static void open_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
 static void closed_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
 {
 	/* Intermediate values for calculation */
-	uint16_t calc_cmd[3];
+	float calc_cmd[3];
 	float phase_currents[3];
 	float alpha_beta[2];
 	float id_iq[2];
 	float id_iq_ref[2] = {0, 0};
 	float id_iq_pid[2];
 	float v_abc_pu[3];
+
+	return;
 
 	/* Decode message data */
 	switch (msg->type) {
@@ -178,6 +180,8 @@ void vFOCctrl(void *pv_params)
 	foc_data_t msg;
 
 	foc_ctrl_t *controller = (foc_ctrl_t *)pv_params;
+	controller->rotor_position = 0.0;
+	controller->last_run_ms = HAL_GetTick();
 	assert(controller);
 
 	for (;;)
@@ -186,7 +190,7 @@ void vFOCctrl(void *pv_params)
 		status = osMessageQueueGet(controller->data_queue, &msg, NULL, osWaitForever);
 		if (status == osOK) {
             if (msg.type == FOCDATA_ROTOR_POSITION) {
-                controller->rotor_speed = (controller->rotor_position - msg.payload.rotor_position) / (HAL_GetTick() - controller->last_run_ms) / 1000;
+                controller->rotor_speed = (controller->rotor_position - msg.payload.rotor_position) / fmax(0.001, ((HAL_GetTick() - controller->last_run_ms) / 1000.0));
             }
 
             if (abs(controller->rotor_speed) <= 0.1) {
@@ -199,6 +203,7 @@ void vFOCctrl(void *pv_params)
             }
 
             controller->last_run_ms = HAL_GetTick();
+			controller->rotor_position = msg.payload.rotor_position;
 		}
 
 		/* Yield to other tasks */

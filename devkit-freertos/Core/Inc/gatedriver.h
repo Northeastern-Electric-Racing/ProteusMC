@@ -40,6 +40,7 @@ enum {
 /* Definition of gatedriver struct */
 typedef struct {
 	TIM_HandleTypeDef* tim;
+	ADC_HandleTypeDef* phase_adc;
     osMutexId_t* tim_mutex;
     TIM_OC_InitTypeDef pwm_cfg;
 	uint32_t pulses[GATEDRV_NUM_PHASES];
@@ -51,7 +52,7 @@ typedef struct {
 void vPhaseActor(void *pv_params);
 
 /* initialize a new gatedriver */
-gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim);
+gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *phase_adc);
 
 /* read the dc voltage (V) */
 int16_t gatedrv_read_dc_voltage(gatedriver_t* drv);
