@@ -2,10 +2,23 @@
 #define GATEDRIVER_H
 
 #include "cmsis_os.h"
-#include "stm32h7xx.h"
-#include "stm32h7xx_hal.h"
+#include "stm32f3xx.h"
+#include "stm32f3xx_hal.h"
 #include <stdbool.h>
 #include <stdint.h>
+
+#define ADV_TIM_CLK_MHz 144
+#define SYSCLK_FREQ 72000000
+#define TIM_CLOCK_DIVIDER 1
+#define ADC_CLK_MHz 72
+#define HALL_TIM_CLK 72000000
+#define APB1TIM_FREQ 72000000
+#define PWM_FREQUENCY 30000
+#define PWM_FREQ_SCALING 1
+#define PWM_PERIOD_CYCLES (ADV_TIM_CLK_MHz*1000000/PWM_FREQUENCY)&0xFFFE
+#define REGULATION_EXECUTION_RATE 1
+#define REP_COUNTER REGULATION_EXECUTION_RATE*2-1
+#define HTMIN 1
 
 /*
  * Note that these phases readings should ALWAYS be mapped to the corresponding indices
@@ -31,18 +44,14 @@ typedef struct {
     TIM_OC_InitTypeDef pwm_cfg;
 	uint32_t pulses[GATEDRV_NUM_PHASES];
 
-    ADC_HandleTypeDef *hdma_adc;
-	SPI_HandleTypeDef *adc_spi;
-    uint32_t intern_adc_buffer[GATEDRV_SIZE_OF_ADC_DMA];
-
     osMutexId_t* tim_mutex_mutex;
     osMutexAttr_t tim_mutex_attr;
-    osMutexId_t* ext_adc_mutex;
-    osMutexAttr_t ext_adc_mutex_attr;
 } gatedriver_t;
 
+void vPhaseActor(void *pv_params);
+
 /* initialize a new gatedriver */
-gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, SPI_HandleTypeDef *adc_spi);
+gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim);
 
 /* read the dc voltage (V) */
 int16_t gatedrv_read_dc_voltage(gatedriver_t* drv);

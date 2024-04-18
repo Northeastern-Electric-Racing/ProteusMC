@@ -29,6 +29,7 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 foc_ctrl_t *foc_controller;
+gatedriver_t *gatedrv;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -67,6 +68,34 @@ const osThreadAttr_t focTask_attributes = {
   .priority = (osPriority_t) osPriorityRealtime,
 };
 
+osThreadId_t phaseActorHandler;
+const osThreadAttr_t phaseActor_attributes = {
+  .name = "Phase Actor",
+  .stack_size = 4096 * 4,
+  .priority = (osPriority_t) osPriorityRealtime,
+};
+
+#ifdef __GNUC__
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif
+
+PUTCHAR_PROTOTYPE
+{
+  HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+  return ch;
+}
+
+int _write(int file, char* ptr, int len) {
+  int DataIdx;
+
+  for (DataIdx = 0; DataIdx < len; DataIdx++) {
+    __io_putchar( *ptr++ );
+  }
+  return len;
+}
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -79,6 +108,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM2_Init(void);
 void StartDefaultTask(void *argument);
+void vPhaseActor(void *pv_params);
 
 /* USER CODE BEGIN PFP */
 
@@ -166,6 +196,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   foc_controller = foc_ctrl_init();
+  gatedrv = gatedrv_init(&htim1);
 
   // start a vbus read, automatically queued into FOC block on completion
   start_vbus_read();
@@ -191,6 +222,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   focTaskHandle = osThreadNew(vFOCctrl, (void *) foc_controller, &focTask_attributes);
+  phaseActorHandler = osThreadNew(vPhaseActor, NULL, &phaseActor_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -661,17 +693,13 @@ void StartDefaultTask(void *argument)
   if(HAL_ADCEx_InjectedStart_IT(&hadc1) != HAL_OK)
     Error_Handler();
 
-  // start pwm generation
-  if(HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4) != HAL_OK)
-    Error_Handler();
-  
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
   /* Infinite loop */
   for(;;)
   {
     // enc_count = encoder_timer_get_count();
     // sprintf(buffer, "encoder count: %lu\r\n", htim2.Instance->CNT);
-    
+
     foc_data_t adc_data = {
       .type = FOCDATA_ROTOR_POSITION,
       .payload.rotor_position = 2 * M_PI * (htim2.Instance->CNT / (8192.0f))
@@ -679,12 +707,26 @@ void StartDefaultTask(void *argument)
     foc_queue_frame(foc_controller, &adc_data);
     // HAL_UART_Transmit(&huart2, (const uint8_t *) &buffer, strlen(buffer), osWaitForever);
     osDelay(10);
-    
+
     // osThreadFlagsWait(1, osFlagsWaitAny, )
     // sprintf(buffer, "adc conversion complete!\r\n");
     // HAL_UART_Transmit(&huart2, (const uint8_t *) &buffer, strlen(buffer), osWaitForever);
   }
   /* USER CODE END 5 */
+}
+
+void vPhaseActor(void *pv_params)
+{
+	osStatus_t status;
+
+	/* Source data for calculations */
+	uint16_t duty_cycles[3];
+
+	for (;;)
+	{
+		foc_retrieve_cmd(foc_controller, duty_cycles);
+    gatedrv_write_pwm(gatedrv, duty_cycles);
+	}
 }
 
 /**

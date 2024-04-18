@@ -44,6 +44,7 @@ Core/Src/controls/svgen_current.c \
 Core/Src/controls/svgen.c \
 Core/Src/controls/ipark.c \
 Core/Src/foc_ctrl.c \
+Core/Src/gatedriver.c \
 Core/Src/main.c \
 Core/Src/freertos.c \
 Core/Src/stm32f3xx_it.c \

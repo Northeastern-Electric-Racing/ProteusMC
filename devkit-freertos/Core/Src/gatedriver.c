@@ -1,5 +1,5 @@
 #include "gatedriver.h"
-#include "stm32h7xx.h"
+#include "stm32f3xx.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,22 +8,7 @@
 // from MCSDK
 #define  PERIOD_VALUE		((PWM_PERIOD_CYCLES) / 2)
 
-static void gatedrv_ready_cb(gatedriver_t* drv)
-{
-
-}
-
-static void gatedrv_reset_cb(gatedriver_t* drv)
-{
-
-}
-
-static void gatedrv_fault_cb(gatedriver_t* drv)
-{
-
-}
-
-gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, SPI_HandleTypeDef *adc_spi)
+gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim)
 {
 	/* Assert hardware params */
 	assert(tim);
@@ -39,14 +24,6 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, 
 	// gatedriver->hdma_adc	= hdma_adc;
 	// gatedriver->adc_spi		= adc_spi;
 
-	/* Init hardware */
-	tim->Init.Prescaler			= ((TIM_CLOCK_DIVIDER) - 1);
-	tim->Init.Period			= PERIOD_VALUE;
-	tim->Init.ClockDivision		= TIM_CLOCKDIVISION_DIV2;
-	tim->Init.CounterMode		= TIM_COUNTERMODE_CENTERALIGNED1;
-	tim->Init.RepetitionCounter	= REP_COUNTER;
-	assert(HAL_TIM_PWM_Init(tim) != HAL_OK);
-
 	/* Common configuration for all PWM channels */
 	gatedriver->pwm_cfg.OCMode       = TIM_OCMODE_PWM1;
 	gatedriver->pwm_cfg.OCPolarity   = TIM_OCPOLARITY_HIGH;
@@ -54,7 +31,11 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, 
 	gatedriver->pwm_cfg.OCIdleState  = TIM_OCIDLESTATE_RESET;
 	gatedriver->pwm_cfg.OCNIdleState = TIM_OCNIDLESTATE_RESET;
 	gatedriver->pwm_cfg.OCFastMode   = TIM_OCFAST_DISABLE;
-	gatedriver->pwm_cfg.OCPreload   = TIM_OCFAST_DISABLE;
+	//gatedriver->pwm_cfg.OCPreload   = TIM_OCFAST_DISABLE;
+
+	// start pwm generation
+	if(HAL_TIM_PWM_Start(tim, TIM_CHANNEL_4) != HAL_OK)
+		Error_Handler();
 
 	/* Configure DMA */
 	// assert(HAL_ADC_Start_DMA(gatedriver->hdma_adc, gatedriver->intern_adc_buffer, GATEDRV_SIZE_OF_ADC_DMA));
@@ -67,23 +48,6 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, 
 	// assert(gatedriver->ext_adc_mutex);
 
 	return gatedriver;
-}
-
-void gatedrv_get_phase_currents(gatedriver_t* drv, int16_t current_buf[GATEDRV_NUM_PHASES])
-{
-	current_buf[GATEDRV_PHASE_U] = drv->intern_adc_buffer[GATEDRV_PHASE_U];
-	current_buf[GATEDRV_PHASE_V] = drv->intern_adc_buffer[GATEDRV_PHASE_V];
-	current_buf[GATEDRV_PHASE_W] = drv->intern_adc_buffer[GATEDRV_PHASE_W];
-}
-
-int16_t gatedrv_read_dc_voltage(gatedriver_t* drv)
-{
-
-}
-
-int16_t gatedrv_read_dc_current(gatedriver_t* drv)
-{
-
 }
 
 /* Note: This has to atomically write to ALL PWM registers */
@@ -144,9 +108,4 @@ int16_t gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[GATEDRV_NUM_PHASE
 
 	osMutexRelease(drv->tim_mutex);
 	return 0;
-}
-
-int16_t gatedrv_read_igbt_temp(gatedriver_t* drv)
-{
-
 }

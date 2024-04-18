@@ -32,11 +32,13 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "foc_ctrl.h"
+#include "gatedriver.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 extern foc_ctrl_t *foc_controller;
+extern gatedriver_t *gatedrv;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -59,18 +61,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define ADV_TIM_CLK_MHz 144
-#define SYSCLK_FREQ 72000000
-#define TIM_CLOCK_DIVIDER 1
-#define ADC_CLK_MHz 72
-#define HALL_TIM_CLK 72000000
-#define APB1TIM_FREQ 72000000
-#define PWM_FREQUENCY 30000
-#define PWM_FREQ_SCALING 1
-#define PWM_PERIOD_CYCLES (ADV_TIM_CLK_MHz*1000000/PWM_FREQUENCY)&0xFFFE
-#define REGULATION_EXECUTION_RATE 1
-#define REP_COUNTER REGULATION_EXECUTION_RATE*2-1
-#define HTMIN 1
 
 /* USER CODE BEGIN Private defines */
 

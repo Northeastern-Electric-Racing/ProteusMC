@@ -36,16 +36,22 @@ typedef struct {
 
 /* Struct to contain parameters for field oriented control */
 typedef struct {
-    osThreadId_t foc_ctrl;
-    osMessageQueueId_t data_queue;
-    osMessageQueueId_t command_queue;
+	osThreadId_t foc_ctrl;
+	osMessageQueueId_t data_queue;
+	osMessageQueueId_t command_queue;
+	float ref_current;
+	float dc_bus_voltage;
+	float rotor_position;
+    float rotor_speed;
+	uint32_t last_run_ms;
+	float open_loop_amplitude;
 
-    PID_Obj *q_pid;
-    PID_Obj *d_pid;
-    CLARKE_Obj *clarke_transform;
-    PARK_Obj *park_transform;
-    IPARK_Obj *ipark_transform;
-    SVGEN_Obj *svm;
+	PID_Obj *q_pid;
+	PID_Obj *d_pid;
+	CLARKE_Obj *clarke_transform;
+	PARK_Obj *park_transform;
+	IPARK_Obj *ipark_transform;
+	SVGEN_Obj *svm;
 } foc_ctrl_t;
 
 foc_ctrl_t *foc_ctrl_init();
@@ -54,8 +60,7 @@ foc_ctrl_t *foc_ctrl_init();
 osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *phase_currents);
 
 /* Wait for a command to be sent from the controller */
-osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, int16_t duty_cycles[3]);
-
+osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, uint16_t duty_cycles[3]);
 
 void vFOCctrl(void *pv_params);
 
