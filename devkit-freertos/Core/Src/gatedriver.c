@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define  PERIOD_VALUE		(uint32_t)(2000 - 1)
+// #define  PERIOD_VALUE		(uint32_t)(2000 - 1)
+// from MCSDK
+#define  PERIOD_VALUE		((PWM_PERIOD_CYCLES) / 2)
 
 static void gatedrv_ready_cb(gatedriver_t* drv)
 {
@@ -25,8 +27,8 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, 
 {
 	/* Assert hardware params */
 	assert(tim);
-	assert(hdma_adc);
-	assert(adc_spi);
+	// assert(hdma_adc);
+	// assert(adc_spi);
 
 	/* Create MPU struct */
 	gatedriver_t* gatedriver = malloc(sizeof(gatedriver_t));
@@ -34,34 +36,35 @@ gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, 
 
 	/* Set interfaces */
 	gatedriver->tim			= tim;
-	gatedriver->hdma_adc	= hdma_adc;
-	gatedriver->adc_spi		= adc_spi;
+	// gatedriver->hdma_adc	= hdma_adc;
+	// gatedriver->adc_spi		= adc_spi;
 
 	/* Init hardware */
-	tim->Init.Prescaler			= 0;
+	tim->Init.Prescaler			= ((TIM_CLOCK_DIVIDER) - 1);
 	tim->Init.Period			= PERIOD_VALUE;
-	tim->Init.ClockDivision		= 0;
-	tim->Init.CounterMode		= TIM_COUNTERMODE_UP;
-	tim->Init.RepetitionCounter	= 0;
+	tim->Init.ClockDivision		= TIM_CLOCKDIVISION_DIV2;
+	tim->Init.CounterMode		= TIM_COUNTERMODE_CENTERALIGNED1;
+	tim->Init.RepetitionCounter	= REP_COUNTER;
 	assert(HAL_TIM_PWM_Init(tim) != HAL_OK);
 
 	/* Common configuration for all PWM channels */
 	gatedriver->pwm_cfg.OCMode       = TIM_OCMODE_PWM1;
 	gatedriver->pwm_cfg.OCPolarity   = TIM_OCPOLARITY_HIGH;
 	gatedriver->pwm_cfg.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
-	gatedriver->pwm_cfg.OCIdleState  = TIM_OCIDLESTATE_SET;
+	gatedriver->pwm_cfg.OCIdleState  = TIM_OCIDLESTATE_RESET;
 	gatedriver->pwm_cfg.OCNIdleState = TIM_OCNIDLESTATE_RESET;
 	gatedriver->pwm_cfg.OCFastMode   = TIM_OCFAST_DISABLE;
+	gatedriver->pwm_cfg.OCPreload   = TIM_OCFAST_DISABLE;
 
 	/* Configure DMA */
-	assert(HAL_ADC_Start_DMA(gatedriver->hdma_adc, gatedriver->intern_adc_buffer, GATEDRV_SIZE_OF_ADC_DMA));
+	// assert(HAL_ADC_Start_DMA(gatedriver->hdma_adc, gatedriver->intern_adc_buffer, GATEDRV_SIZE_OF_ADC_DMA));
 
 	/* Create Mutexes */
 	gatedriver->tim_mutex = osMutexNew(&gatedriver->tim_mutex_attr);
 	assert(gatedriver->tim_mutex);
 
-	gatedriver->ext_adc_mutex = osMutexNew(&gatedriver->ext_adc_mutex_attr);
-	assert(gatedriver->ext_adc_mutex);
+	// gatedriver->ext_adc_mutex = osMutexNew(&gatedriver->ext_adc_mutex_attr);
+	// assert(gatedriver->ext_adc_mutex);
 
 	return gatedriver;
 }

@@ -59,14 +59,13 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* USER CODE BEGIN PV */
 osThreadId_t focTaskHandle;
 const osThreadAttr_t focTask_attributes = {
-  .name = "focTask",
-  .stack_size = 128 * 4,
+  .name = "FOC task",
+  .stack_size = 4096 * 4,
   .priority = (osPriority_t) osPriorityRealtime,
 };
-
-/* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
 
@@ -87,17 +86,42 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#define ADC_MAX_VALUE (0xFFFF)
+//                 (Scale ADC counts to voltage)  (Divide gain)   (V/R, R=0.33ohms)
+#define COUNTS_TO_AMPS ((3.3f / ADC_MAX_VALUE) * (1.0f / 1.53f) * (1.0f / 0.33f))
+
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
   foc_data_t adc_data = {
     .type = FOCDATA_PHASE_CURRENT,
     .payload.phase_currents = {
-      hadc->Instance->JDR1,
-      hadc->Instance->JDR2,
-      hadc->Instance->JDR3,
+      (float) hadc->Instance->JDR1 * COUNTS_TO_AMPS,
+      (float) hadc->Instance->JDR2 * COUNTS_TO_AMPS,
+      (float) hadc->Instance->JDR3 * COUNTS_TO_AMPS,
     }
   };
   foc_queue_frame(foc_controller, &adc_data);
 }
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
+  // bus voltage is on ADC1 Channel 2
+  uint16_t counts = HAL_ADC_GetValue(hadc);
+
+  // VBUS is read through a voltage divider between a 169k and a 9.31k resistor
+  float vbus = (float) counts / (9.31f / (169.0f + 9.31f));
+
+  foc_data_t vbus_data = {
+    .type = FOCDATA_DC_BUS_VOLTAGE,
+    .payload.dc_bus_voltage = vbus
+  };
+
+  foc_queue_frame(foc_controller, &vbus_data);
+}
+
+void start_vbus_read() {
+  // bus voltage is read from ADC1 Channel 2
+  HAL_ADC_Start_IT(&hadc1);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -142,6 +166,9 @@ int main(void)
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   foc_controller = foc_ctrl_init();
+
+  // start a vbus read, automatically queued into FOC block on completion
+  start_vbus_read();
 
   /* USER CODE END RTOS_MUTEX */
 
@@ -245,6 +272,7 @@ static void MX_ADC1_Init(void)
   /* USER CODE END ADC1_Init 0 */
 
   ADC_InjectionConfTypeDef sConfigInjected = {0};
+  ADC_ChannelConfTypeDef sConfig = {0};
 
   /* USER CODE BEGIN ADC1_Init 1 */
 
@@ -258,6 +286,8 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_LEFT;
   hadc1.Init.NbrOfConversion = 1;
   hadc1.Init.DMAContinuousRequests = DISABLE;
@@ -271,7 +301,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Injected Channel
   */
-  sConfigInjected.InjectedChannel = ADC_CHANNEL_6;
+  sConfigInjected.InjectedChannel = ADC_CHANNEL_1;
   sConfigInjected.InjectedRank = ADC_INJECTED_RANK_1;
   sConfigInjected.InjectedSingleDiff = ADC_SINGLE_ENDED;
   sConfigInjected.InjectedNbrOfConversion = 3;
@@ -299,9 +329,22 @@ static void MX_ADC1_Init(void)
 
   /** Configure Injected Channel
   */
-  sConfigInjected.InjectedChannel = ADC_CHANNEL_8;
+  sConfigInjected.InjectedChannel = ADC_CHANNEL_6;
   sConfigInjected.InjectedRank = ADC_INJECTED_RANK_3;
   if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_2;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SingleDiff = ADC_SINGLE_ENDED;
+  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+  sConfig.Offset = 0;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }

@@ -27,7 +27,7 @@ typedef struct {
     } type;
 
     union {
-        int16_t phase_currents[3];
+        float phase_currents[3];
         float rotor_position;
         float dc_bus_voltage;
         float ref_current;
