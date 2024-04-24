@@ -225,7 +225,7 @@ int main(void)
     if (estop_check())
       estop_handler();
 
-    // Read vbus
+    // // Read vbus
     // vbus_voltage = vbus_read();
     // foc_ctrl_update_v_ref(&foc_controller, vbus_voltage);
 
@@ -233,14 +233,12 @@ int main(void)
     // float ref_current = 0.2; // A
     // foc_ctrl_update_ref_current(&foc_controller, ref_current);
 
-    // Wait for injected adc to be done
-		// set_debug_pin(1);
+    // // Wait for injected adc to be done
     // HAL_ADCEx_InjectedPollForConversion(&hadc1, HAL_MAX_DELAY);
-    // set_debug_pin(0);
     
     // gatedrv_get_phase_currents(&gatedrv, phase_currents);
 
-    // Get encoder velocity
+    // // Get encoder velocity
     // velocity = encoder_calculate_velocity(&encoder, us_timer_get() / 1000000.0);
     // position = encoder_read_angle(&encoder);
     // foc_ctrl_update_encoder(&foc_controller, velocity, position);

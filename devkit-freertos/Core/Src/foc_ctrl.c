@@ -13,7 +13,7 @@
 #include "main.h"
 
 // #define CLOSED_LOOP_MIN_DURATION	100000 // ms
-// #define CLOSED_LOOP_SPEED_THRESHOLD	100.0 // rad/s
+// #define CLOSED_LOOP_SPEED_THRESHOLD	10000.0 // rad/s
 
 /*
  * CLARKE TRANSFORM PARAMETERS
@@ -25,7 +25,7 @@
 
 #define OPEN_LOOP_MAX_AMPLITUDE	0.7f	/* max duty cycle */
 #define OPEN_LOOP_RAMP_TIME		5.0		/* seconds */
-#define OPEN_LOOP_VELOCITY      2000
+#define OPEN_LOOP_VELOCITY      1000
 
 void start_timer(nertimer_t *timer, uint32_t duration)
 {
@@ -82,6 +82,7 @@ void foc_ctrl_init(foc_ctrl_t *controller)
 	PID_init(&controller->q_pid, sizeof(controller->q_pid));
 
 	controller->last_run_us = us_timer_get();
+	controller->open_loop_ramp_velocity = 0.3;
 	cancel_timer(&controller->closed_loop_timer);
 }
 
@@ -106,7 +107,7 @@ static void open_loop_ctrl(foc_ctrl_t *controller, float duty_cycles[3])
 
 	controller->last_run_us = current_time_us;
 	if (controller->open_loop_ramp_velocity < OPEN_LOOP_VELOCITY)
-		controller->open_loop_ramp_velocity += 0.3;
+		controller->open_loop_ramp_velocity *= 1.003;
 	
 	controller->open_loop_ramp_position += controller->open_loop_ramp_velocity * (dt / 1000000.0f);
 	printf("pos: %f\r\n", controller->open_loop_ramp_position);
