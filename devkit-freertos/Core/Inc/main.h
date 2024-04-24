@@ -60,7 +60,7 @@ void Error_Handler(void);
 
 /* Private defines -----------------------------------------------------------*/
 #define PWM_PERIOD_CYCLES (ADV_TIM_CLK_MHz*1000000/PWM_FREQUENCY)&0xFFFE
-#define PWM_FREQUENCY 1000
+#define PWM_FREQUENCY 30000
 #define REGULATION_EXECUTION_RATE 1
 #define TIM_CLOCK_DIVIDER 1
 #define ADC_CLK_MHz 72
