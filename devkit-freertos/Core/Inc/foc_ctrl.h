@@ -36,6 +36,8 @@ typedef struct {
 	float dc_bus_voltage;
 	float rotor_position;
 	float open_loop_ramp_position;
+	float open_loop_ramp_velocity;
+	float open_loop_ramp_jork;
     float rotor_velocity;
 	float open_loop_amplitude;
     uint32_t last_run_us;

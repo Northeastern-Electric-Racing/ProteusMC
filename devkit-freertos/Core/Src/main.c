@@ -40,7 +40,9 @@ encoder_t encoder;
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+void set_debug_pin(int val) {
+  HAL_GPIO_WritePin(USER_GPIO_Port, USER_Pin, val ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -114,7 +116,7 @@ static void MX_TIM6_Init(void);
 float vbus_read() {
   // // bus voltage is read from ADC1 Channel 2
   // HAL_ADC_Start(&hadc1);
-  
+
   // HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
   // int dr = HAL_ADC_GetValue(&hadc1);
 
@@ -127,17 +129,23 @@ float get_user_phase() {
 }
 
 void enable_driver() {
-  HAL_GPIO_WritePin(EN1_GPIO_Port, EN1_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(EN2_GPIO_Port, EN2_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(EN3_GPIO_Port, EN3_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(DRIVER_EN_GPIO_Port, DRIVER_EN_Pin, GPIO_PIN_SET);
 }
 
+void enable_driver_phases() {
+  HAL_GPIO_WritePin(EN1_GPIO_Port, EN1_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(EN2_GPIO_Port, EN2_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(EN3_GPIO_Port, EN3_Pin, GPIO_PIN_SET);
+}
+
 void disable_driver() {
+  HAL_GPIO_WritePin(DRIVER_EN_GPIO_Port, DRIVER_EN_Pin, GPIO_PIN_RESET);
+}
+
+void disable_driver_phases() {
   HAL_GPIO_WritePin(EN1_GPIO_Port, EN1_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(EN2_GPIO_Port, EN2_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(EN3_GPIO_Port, EN3_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(DRIVER_EN_GPIO_Port, DRIVER_EN_Pin, GPIO_PIN_RESET);
 }
 
 int estop_check() {
@@ -148,6 +156,7 @@ void estop_handler() {
   printf("Estop pressed! Reset board to restart motor\r\n");
   gatedrv_write_pwm(&gatedrv, (float[3]) { 0.0, 0.0, 0.0 });
   disable_driver();
+  disable_driver_phases();
   Error_Handler();
 }
 
@@ -196,13 +205,17 @@ int main(void)
   encoder_init(&encoder, &htim2);
 
   // drive enable pins high
+  // disable_driver();
+  // disable_driver_phases();
   enable_driver();
+  enable_driver_phases();
   int i = 0;
 
   float vbus_voltage;
   float position;
   float velocity;
 
+  set_debug_pin(0);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -213,33 +226,31 @@ int main(void)
       estop_handler();
 
     // Read vbus
-    vbus_voltage = vbus_read();
-    foc_ctrl_update_v_ref(&foc_controller, vbus_voltage);
+    // vbus_voltage = vbus_read();
+    // foc_ctrl_update_v_ref(&foc_controller, vbus_voltage);
 
-    // Get encoder velocity
-    velocity = encoder_calculate_velocity(&encoder, us_timer_get() / 1000000.0);
-
-    // Get ref current
-    float ref_current = 5.0; // A
-    foc_ctrl_update_ref_current(&foc_controller, ref_current);
+    // // // Get ref current
+    // float ref_current = 0.2; // A
+    // foc_ctrl_update_ref_current(&foc_controller, ref_current);
 
     // Wait for injected adc to be done
-    if (HAL_ADCEx_InjectedPollForConversion(&hadc1, 1000) != HAL_OK) {
-      printf("ADC poll timeout!\r\n");
-      estop_handler();
-    }
+		// set_debug_pin(1);
+    // HAL_ADCEx_InjectedPollForConversion(&hadc1, HAL_MAX_DELAY);
+    // set_debug_pin(0);
     
-    position = encoder_read_angle(&encoder) + get_user_phase();
-    foc_ctrl_update_encoder(&foc_controller, velocity, position);
+    // gatedrv_get_phase_currents(&gatedrv, phase_currents);
 
-    gatedrv_get_phase_currents(&gatedrv, phase_currents);
+    // Get encoder velocity
+    // velocity = encoder_calculate_velocity(&encoder, us_timer_get() / 1000000.0);
+    // position = encoder_read_angle(&encoder);
+    // foc_ctrl_update_encoder(&foc_controller, velocity, position);
 
-    foc_ctrl_run(&foc_controller, phase_currents, duty_cycles);
+		foc_ctrl_run(&foc_controller, phase_currents, duty_cycles);
 
     gatedrv_write_pwm(&gatedrv, duty_cycles);
 
     // print very infreqently
-    // if (i++ % 50 == 0) {
+    // if (i++ % 400 == 0) {
     //   printf("V Bus reading: %6.3f ", vbus_voltage);
     //   printf("Rotor Angle: %6.3f ", position);
     //   printf("Rotor Speed: %8.3f ", velocity);
@@ -347,7 +358,7 @@ static void MX_ADC1_Init(void)
   sConfigInjected.InjectedChannel = ADC_CHANNEL_1;
   sConfigInjected.InjectedRank = ADC_INJECTED_RANK_1;
   sConfigInjected.InjectedSingleDiff = ADC_SINGLE_ENDED;
-  sConfigInjected.InjectedNbrOfConversion = 4;
+  sConfigInjected.InjectedNbrOfConversion = 3;
   sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_1CYCLE_5;
   sConfigInjected.ExternalTrigInjecConvEdge = ADC_EXTERNALTRIGINJECCONV_EDGE_RISING;
   sConfigInjected.ExternalTrigInjecConv = ADC_EXTERNALTRIGINJECCONV_T1_TRGO;
@@ -379,18 +390,9 @@ static void MX_ADC1_Init(void)
     Error_Handler();
   }
 
-  /** Configure Injected Channel
-  */
-  sConfigInjected.InjectedChannel = ADC_CHANNEL_12;
-  sConfigInjected.InjectedRank = ADC_INJECTED_RANK_4;
-  if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_12;
+  sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
@@ -641,6 +643,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(DRIVER_EN_GPIO_Port, DRIVER_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(USER_GPIO_Port, USER_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, EN1_Pin|EN2_Pin|EN3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : ESTOP_Pin */
@@ -655,6 +660,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(DRIVER_EN_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : USER_Pin */
+  GPIO_InitStruct.Pin = USER_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(USER_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : ENC_Z_Pin */
   GPIO_InitStruct.Pin = ENC_Z_Pin;
