@@ -37,8 +37,6 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-extern foc_ctrl_t *foc_controller;
-extern gatedriver_t *gatedrv;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -61,6 +59,32 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define PWM_PERIOD_CYCLES (ADV_TIM_CLK_MHz*1000000/PWM_FREQUENCY)&0xFFFE
+#define PWM_FREQUENCY 30000
+#define REGULATION_EXECUTION_RATE 1
+#define TIM_CLOCK_DIVIDER 1
+#define ADC_CLK_MHz 72
+#define APB1TIM_FREQ 72000000
+#define HALL_TIM_CLK 72000000
+#define PWM_FREQ_SCALING 1
+#define REP_COUNTER REGULATION_EXECUTION_RATE*2-1
+#define HTMIN 1
+#define ADV_TIM_CLK_MHz 144
+#define SYSCLK_FREQ 72000000
+#define ESTOP_Pin GPIO_PIN_13
+#define ESTOP_GPIO_Port GPIOC
+#define ESTOP_EXTI_IRQn EXTI15_10_IRQn
+#define DRIVER_EN_Pin GPIO_PIN_6
+#define DRIVER_EN_GPIO_Port GPIOA
+#define ENC_Z_Pin GPIO_PIN_10
+#define ENC_Z_GPIO_Port GPIOB
+#define ENC_Z_EXTI_IRQn EXTI15_10_IRQn
+#define EN1_Pin GPIO_PIN_10
+#define EN1_GPIO_Port GPIOC
+#define EN2_Pin GPIO_PIN_11
+#define EN2_GPIO_Port GPIOC
+#define EN3_Pin GPIO_PIN_12
+#define EN3_GPIO_Port GPIOC
 
 /* USER CODE BEGIN Private defines */
 

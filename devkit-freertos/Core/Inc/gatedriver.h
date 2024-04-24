@@ -1,7 +1,6 @@
 #ifndef GATEDRIVER_H
 #define GATEDRIVER_H
 
-#include "cmsis_os.h"
 #include "stm32f3xx.h"
 #include "stm32f3xx_hal.h"
 #include <stdbool.h>
@@ -19,6 +18,7 @@
 #define REGULATION_EXECUTION_RATE 1
 #define REP_COUNTER REGULATION_EXECUTION_RATE*2-1
 #define HTMIN 1
+#define PERIOD_VALUE  ((PWM_PERIOD_CYCLES) / 2)
 
 /*
  * Note that these phases readings should ALWAYS be mapped to the corresponding indices
@@ -41,32 +41,21 @@ enum {
 typedef struct {
 	TIM_HandleTypeDef* tim;
 	ADC_HandleTypeDef* phase_adc;
-    osMutexId_t* tim_mutex;
     TIM_OC_InitTypeDef pwm_cfg;
-	uint32_t pulses[GATEDRV_NUM_PHASES];
 
-    osMutexId_t* tim_mutex_mutex;
-    osMutexAttr_t tim_mutex_attr;
+    int initial_reading_taken;
+    float channel_offsets[3];
 } gatedriver_t;
 
-void vPhaseActor(void *pv_params);
-
 /* initialize a new gatedriver */
-gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *phase_adc);
-
-/* read the dc voltage (V) */
-int16_t gatedrv_read_dc_voltage(gatedriver_t* drv);
-
-/* read the dc current (A) */
-int16_t gatedrv_read_dc_current(gatedriver_t* drv);
+void gatedrv_init(gatedriver_t *gatedriver, TIM_HandleTypeDef* tim, ADC_HandleTypeDef *phase_adc);
 
 /* Note: This has to atomically write to ALL PWM registers */
-int16_t gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[]);
+void gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[]);
 
 /* read the internal IGBT temp */
 int16_t gatedrv_read_igbt_temp(gatedriver_t* drv);
 
-/* read the currents of each phase */
-void gatedrv_get_phase_currents(gatedriver_t* drv, int16_t current_buf[GATEDRV_NUM_PHASES]);
+void gatedrv_get_phase_currents(gatedriver_t *drv, float phase_currents[3]);
 
 #endif /* GATEDRIVER_H */

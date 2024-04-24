@@ -1,13 +1,17 @@
 #include "foc_ctrl.h"
 #include "proteus_config.h"
-#include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 #include <assert.h>
 #include <string.h>
 #include "stm32f3xx_hal.h"
+#include <stdio.h>
+#include "us_timer.h"
+#include <stdbool.h>
+#include <stdlib.h>
 
-#define INBOUND_QUEUE_SIZE 30
-#define OUTBOUND_QUEUE_SIZE 15
+#define CLOSED_LOOP_MIN_DURATION	1000 // ms
+#define CLOSED_LOOP_SPEED_THRESHOLD	100.0 // rad/s
 
 /*
  * CLARKE TRANSFORM PARAMETERS
@@ -15,198 +19,151 @@
  */
 #define NUM_CURRENT_SENSORS     3
 #define CLARKE_ALPHA            1/3
-#define CLARKE_BETA             1/sqrt(3)
+#define CLARKE_BETA             1/sqrtf(3)
 
-#define OPEN_LOOP_MAX_AMPLITUDE	0.05	/* max duty cycle */
-#define OPEN_LOOP_RAMP_TIME		1		/* seconds */
+#define OPEN_LOOP_MAX_AMPLITUDE	0.3f	/* max duty cycle */
+#define OPEN_LOOP_RAMP_TIME		500000.0		/* microseconds */
+#define OPEN_LOOP_VELOCITY      10
+
+void start_timer(nertimer_t *timer, uint32_t duration)
+{
+    /* this function assumes tick set to default 1 ms. Update or use HAL_GetTickFreq() if not the case */
+    timer->start_time = HAL_GetTick();
+    timer->end_time = timer->start_time + duration;
+    timer->active = true;
+    timer->completed = false;
+}
+
+void cancel_timer(nertimer_t *timer)
+{
+    timer->active = false;
+    timer->completed = false;
+}
+
+bool is_timer_expired(nertimer_t *timer)
+{
+    if (timer->active)
+    {
+        if (HAL_GetTick() >= timer->end_time)
+        {
+            timer->active = false;
+            timer->completed = true;
+        }
+    }
+    return timer->completed;
+}
+
+bool is_timer_active(nertimer_t *timer)
+{
+    return timer->active;
+}
 
 enum {
 	D,
 	Q
 };
 
-foc_ctrl_t *foc_ctrl_init()
+void foc_ctrl_init(foc_ctrl_t *controller)
 {
-	/* Create FOC struct */
-	foc_ctrl_t *controller = malloc(sizeof(foc_ctrl_t));
-	assert(controller);
-	controller->data_queue = osMessageQueueNew(INBOUND_QUEUE_SIZE, sizeof(foc_data_t), NULL);
-	controller->command_queue = osMessageQueueNew(OUTBOUND_QUEUE_SIZE, sizeof(float[3]), NULL);
-
 	/* Initialize Clarke Transform */
-	controller->clarke_transform = malloc(sizeof(CLARKE_Obj));
-	assert(controller->clarke_transform);
-	CLARKE_setNumSensors(controller->clarke_transform, NUM_CURRENT_SENSORS);
-	CLARKE_setScaleFactors(controller->clarke_transform, CLARKE_ALPHA, CLARKE_BETA);
-
-	/* Initialize Park Transform */
-	controller->park_transform = malloc(sizeof(PARK_Obj));
-	assert(controller->park_transform);
-
-	/* Initialize Inverse Park Transform */
-	controller->ipark_transform = malloc(sizeof(IPARK_Obj));
-	assert(controller->ipark_transform);
-
-	/* Initialize Space Vector Modulation */
-	controller->svm = malloc(sizeof(SVGEN_Obj));
-	assert(controller->svm);
+	CLARKE_setNumSensors(&controller->clarke_transform, NUM_CURRENT_SENSORS);
+	CLARKE_setScaleFactors(&controller->clarke_transform, CLARKE_ALPHA, CLARKE_BETA);
 
 	/* Iniitialize PIDs */
 	//TODO: Actually initialize values of PID
-	controller->d_pid = malloc(sizeof(PID_Obj));
-	assert(controller->d_pid);
-	//PID_setGains(controller->d_pid, kp, ki, kd);
+	PID_setGains(&controller->d_pid, 1, 1, 0);
 	//PID_setMinMax(controller->d_pid);
+	PID_init(&controller->d_pid, sizeof(controller->d_pid));
 
-	controller->q_pid = malloc(sizeof(PID_Obj));
-	assert(controller->q_pid);
-	//PID_setGains(controller->q_pid, kp, ki, kd);
-	//PID_setMinMax(controller->q_pid);
+	PID_setGains(&controller->q_pid, 1, 1, 0);
+	// PID_setMinMax(controller->q_pid);
+	PID_init(&controller->q_pid, sizeof(controller->q_pid));
 
-	controller->last_run_ms = HAL_GetTick();
-
-	return controller;
+	controller->last_run_us = us_timer_get();
+	cancel_timer(&controller->closed_loop_timer);
 }
 
-osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *data)
-{
-	if (!controller->data_queue)
-		return -1;
-
-	return osMessageQueuePut(controller->data_queue, data, 0U, 0U);
-}
-
-osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, float duty_cycles[3])
-{
-	if (!controller->command_queue)
-		return -1;
-
-	return osMessageQueueGet(controller->command_queue, duty_cycles, NULL, osWaitForever);
-}
-
-static void open_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
+static void open_loop_ctrl(foc_ctrl_t *controller, float duty_cycles[3])
 {
 	/* Note: assuming we start from 0 angular velocity */
-	uint16_t duty_cmds[3];
+	/* Assuming tick is set to 1 ms */
+	uint32_t current_time_us = us_timer_get();
+	uint32_t dt = (uint16_t) ((uint16_t) current_time_us - (uint16_t) controller->last_run_us);
 
-	if (msg->type == FOCDATA_ROTOR_POSITION) {
-		/* Assuming tick is set to 1 ms */
-		uint32_t dt = HAL_GetTick() - controller->last_run_ms;
+	/* Ramp amplitude */
+	controller->open_loop_amplitude += ((OPEN_LOOP_MAX_AMPLITUDE ) / OPEN_LOOP_RAMP_TIME) * dt;
 
-		/* Ramp amplitude */
-		controller->open_loop_amplitude += ((OPEN_LOOP_MAX_AMPLITUDE - 0) / OPEN_LOOP_RAMP_TIME) * dt;
+	/* Clamp signal */
+	if (controller->open_loop_amplitude > OPEN_LOOP_MAX_AMPLITUDE)
+		controller->open_loop_amplitude = OPEN_LOOP_MAX_AMPLITUDE;
 
-		/* Clamp signal */
-		if (controller->open_loop_amplitude > OPEN_LOOP_MAX_AMPLITUDE)
-			controller->open_loop_amplitude = OPEN_LOOP_MAX_AMPLITUDE;
+	/* Generate three-phase duty cycles */
+	duty_cycles[0] = controller->open_loop_amplitude * (sinf(controller->open_loop_ramp_position) + 1) / 2;
+	duty_cycles[1] = controller->open_loop_amplitude * (sinf(controller->open_loop_ramp_position - 2 * M_PI / 3) + 1) / 2;
+	duty_cycles[2] = controller->open_loop_amplitude * (sinf(controller->open_loop_ramp_position + 2 * M_PI / 3) + 1) / 2;
 
-		/* Generate three-phase duty cycles */
-		duty_cmds[0] = controller->open_loop_amplitude * sinf(controller->rotor_position);
-		duty_cmds[1] = controller->open_loop_amplitude * sinf(controller->rotor_position - 2 * M_PI / 3);
-		duty_cmds[2] = controller->open_loop_amplitude * sinf(controller->rotor_position + 2 * M_PI / 3);
-
-		osMessageQueuePut(controller->command_queue, duty_cmds, 0U, 0U);
-	}
+	controller->last_run_us = current_time_us;
+	controller->open_loop_ramp_position +=  dt;
 }
 
-static void closed_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
+static void closed_loop_ctrl(foc_ctrl_t *controller, float phase_currents[3], float duty_cycles[3])
 {
 	/* Intermediate values for calculation */
-	float calc_cmd[3];
-	float phase_currents[3];
 	float alpha_beta[2];
 	float id_iq[2];
-	float id_iq_ref[2] = {0, 0};
 	float id_iq_pid[2];
 	float v_abc_pu[3];
 
-	return;
+	CLARKE_run(&controller->clarke_transform, phase_currents, alpha_beta);
+	PARK_run(&controller->park_transform, alpha_beta, id_iq);
 
-	/* Decode message data */
-	switch (msg->type) {
-		/* If its a phase current measurement, run control pipeline */
-		case FOCDATA_PHASE_CURRENT:
-			//TODO: Convert raw ADC reading of phases to current values
-			CLARKE_run(controller->clarke_transform, msg->payload.phase_currents, alpha_beta);
-			PARK_run(controller->park_transform, alpha_beta, id_iq);
+	/*
+	* Here, adjust I_q based on the desired current, reference for I_d is always 0
+	* I_q is actually being varied
+	*/
+	PID_run_parallel(&controller->q_pid, 0, id_iq[D], 0, &id_iq_pid[D]);
+	PID_run_parallel(&controller->d_pid, controller->ref_current, id_iq[Q], 0, &id_iq_pid[Q]);
 
-			/*
-			* Here, adjust I_q based on the desired current, reference for I_d is always 0
-			* I_q is actually being varied
-			*/
-			PID_run_parallel(controller->q_pid, 0, id_iq[D], 0, &id_iq_pid[D]);
-			PID_run_parallel(controller->d_pid, controller->ref_current, id_iq[Q], 0, &id_iq_pid[Q]);
+	IPARK_run(&controller->ipark_transform, id_iq, alpha_beta);
+	SVGEN_run(&controller->svm, alpha_beta, v_abc_pu);
 
-			IPARK_run(controller->ipark_transform, id_iq, alpha_beta);
-			SVGEN_run(controller->svm, alpha_beta, v_abc_pu);
-
-			calc_cmd[0] = (v_abc_pu[0] + 1.0) / 2.0;
-			calc_cmd[1] = (v_abc_pu[1] + 1.0) / 2.0;
-			calc_cmd[2] = (v_abc_pu[2] + 1.0) / 2.0;
-
-			/* Send out duty cycle command */
-			osMessageQueuePut(controller->command_queue, calc_cmd, 0U, 0U);
-			break;
-
-		/* If its a new rotor position, update Park and Inverse Park Transforms */
-		case FOCDATA_ROTOR_POSITION:
-			PARK_setup(controller->park_transform, msg->payload.rotor_position);
-			IPARK_setup(controller->ipark_transform, msg->payload.rotor_position);
-			controller->rotor_position = msg->payload.rotor_position;
-			break;
-
-		/* If its a new DC bus voltage reading, update the Space Vector Modulation block */
-		case FOCDATA_DC_BUS_VOLTAGE:
-			SVGEN_setup(controller->svm, 1/msg->payload.dc_bus_voltage);
-			controller->dc_bus_voltage = msg->payload.dc_bus_voltage;
-			break;
-
-		/* If its a new desired current, update the new reference current */
-		case FOCDATA_REF_CURRENT:
-			controller->ref_current = msg->payload.ref_current;
-			break;
-
-		default:
-			/* Unknown data type */
-			break;
-	}
+	duty_cycles[0] = (v_abc_pu[0] + 1.0) / 2.0;
+	duty_cycles[1] = (v_abc_pu[1] + 1.0) / 2.0;
+	duty_cycles[2] = (v_abc_pu[2] + 1.0) / 2.0;
 }
 
-void vFOCctrl(void *pv_params)
+void foc_ctrl_update_v_ref(foc_ctrl_t *controller, float v_ref)
 {
-	osStatus_t status;
+	SVGEN_setup(&controller->svm, 1 / v_ref);
+	controller->dc_bus_voltage = v_ref;
+}
 
-	/* Source data for calculations */
-	foc_data_t msg;
+void foc_ctrl_update_encoder(foc_ctrl_t *controller, float velocity, float position)
+{
+	PARK_setup(&controller->park_transform, position);
+	IPARK_setup(&controller->ipark_transform, position);
+	controller->rotor_position = position;
+	controller->rotor_velocity = velocity;
+}
 
-	foc_ctrl_t *controller = (foc_ctrl_t *)pv_params;
-	controller->rotor_position = 0.0;
-	controller->last_run_ms = HAL_GetTick();
-	assert(controller);
+void foc_ctrl_update_ref_current(foc_ctrl_t *controller, float current)
+{
+	controller->ref_current = current;
+}
 
-	for (;;)
-	{
-		/* Wait until a message is in the queue, send messages when they are in the queue */
-		status = osMessageQueueGet(controller->data_queue, &msg, NULL, osWaitForever);
-		if (status == osOK) {
-            if (msg.type == FOCDATA_ROTOR_POSITION) {
-                controller->rotor_speed = (controller->rotor_position - msg.payload.rotor_position) / fmax(0.001, ((HAL_GetTick() - controller->last_run_ms) / 1000.0));
-            }
+void foc_ctrl_run(foc_ctrl_t *controller, float phase_currents[3], float duty_cycles[3])
+{
+	if (abs(controller->rotor_velocity) > CLOSED_LOOP_SPEED_THRESHOLD) {
+		start_timer(&controller->closed_loop_timer, CLOSED_LOOP_MIN_DURATION);
+	}
 
-            if (abs(controller->rotor_speed) <= 0.1) {
-                /* Open Loop Startup Procedure */
-                open_loop_ctrl(controller, &msg);
-            }
-            else {
-                /* Closed loop control while running */
-                closed_loop_ctrl(controller, &msg);
-            }
-
-            controller->last_run_ms = HAL_GetTick();
-			controller->rotor_position = msg.payload.rotor_position;
-		}
-
-		/* Yield to other tasks */
-		osThreadYield();
+	if (abs(controller->rotor_velocity) <= CLOSED_LOOP_SPEED_THRESHOLD && (!is_timer_active(&controller->closed_loop_timer) || is_timer_expired(&controller->closed_loop_timer))) {
+		/* Open Loop Startup Procedure */
+		controller->mode = FOC_OPEN_LOOP;
+		open_loop_ctrl(controller, duty_cycles);
+	} else {
+		/* Closed loop control while running */
+		controller->mode = FOC_CLOSED_LOOP;
+		closed_loop_ctrl(controller, phase_currents, duty_cycles);
 	}
 }
