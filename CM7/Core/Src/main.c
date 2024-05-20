@@ -126,10 +126,12 @@ int main(void)
     ;
   if (timeout < 0)
   {
-    Error_Handler();
+    //Error_Handler();
   }
 /* USER CODE END Boot_Mode_Sequence_1 */
   /* MCU Configuration--------------------------------------------------------*/
+
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_All, 0);
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
@@ -158,7 +160,7 @@ int main(void)
     ;
   if (timeout < 0)
   {
-    Error_Handler();
+    //Error_Handler();
   }
 /* USER CODE END Boot_Mode_Sequence_2 */
 
@@ -181,31 +183,6 @@ int main(void)
   MX_TIM8_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
-  HAL_Delay(100);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
-  HAL_Delay(100);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
-  HAL_Delay(100);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
-  HAL_Delay(100);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_15);
-  HAL_Delay(100);
-  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-
-  HAL_Delay(100);
-
 
   /* USER CODE END 2 */
 
@@ -1129,6 +1106,7 @@ static void MX_DMA_Init(void)
 static void MX_GPIO_Init(void)
 {
 /* USER CODE BEGIN MX_GPIO_Init_1 */
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
@@ -1142,6 +1120,12 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOG_CLK_ENABLE();
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
+
+GPIO_InitStruct.Pin = GPIO_PIN_13;
+GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+GPIO_InitStruct.Pull = GPIO_NOPULL;
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 /* USER CODE END MX_GPIO_Init_2 */
 }
 
@@ -1162,7 +1146,8 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for (;;)
   {
-    osDelay(1);
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    osDelay(500);
   }
   /* USER CODE END 5 */
 }
