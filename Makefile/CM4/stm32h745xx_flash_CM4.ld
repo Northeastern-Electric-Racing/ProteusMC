@@ -45,7 +45,11 @@ MEMORY
 {
 FLASH (rx)      : ORIGIN = 0x08100000, LENGTH = 1024K
 RAM (xrw)      : ORIGIN = 0x10000000, LENGTH = 288K
+OPEN_AMP_SHMEM (xrw) : ORIGIN = 0x28000400, LENGTH = 63K
 }
+
+__OPENAMP_region_start__  = ORIGIN(OPEN_AMP_SHMEM);
+__OPENAMP_region_end__ = ORIGIN(OPEN_AMP_SHMEM) + LENGTH(OPEN_AMP_SHMEM);
 
 /* Define output sections */
 SECTIONS

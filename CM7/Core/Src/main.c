@@ -183,6 +183,12 @@ int main(void)
   MX_TIM8_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
+  /* Wait for master core signal */
+  while (__HAL_HSEM_GET_FLAG(HSEM_ID_0) == 0)
+  {
+      // Busy wait
+  }
+
   MX_OPENAMP_Init(RPMSG_REMOTE, amp_bind_cb);
   /* USER CODE END 2 */
 

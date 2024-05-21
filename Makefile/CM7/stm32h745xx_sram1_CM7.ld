@@ -44,8 +44,12 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
 RAM_EXEC (rx)      : ORIGIN = 0x24000000, LENGTH = 256K
-RAM (xrw)      : ORIGIN = 0x24040000, LENGTH = 256K
+RAM (xrw)          : ORIGIN = 0x24040000, LENGTH = 192K  /* Adjust length to avoid overlap with OPEN_AMP_SHMEM */
+OPEN_AMP_SHMEM (xrw) : ORIGIN = 0x24070000, LENGTH = 64K  /* Define the shared memory region at the end of RAM */
 }
+
+__OPENAMP_region_start__  = ORIGIN(OPEN_AMP_SHMEM);
+__OPENAMP_region_end__ = ORIGIN(OPEN_AMP_SHMEM) + LENGTH(OPEN_AMP_SHMEM);
 
 /* Define output sections */
 SECTIONS

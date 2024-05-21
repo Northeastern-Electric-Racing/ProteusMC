@@ -152,6 +152,10 @@ int main(void)
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
   MX_OPENAMP_Init(RPMSG_MASTER, amp_bind_cb);
+
+  /* Signal remote core to start */
+  HAL_HSEM_FastTake(HSEM_ID_0);
+  HAL_HSEM_Release(HSEM_ID_0, 0);
   /* USER CODE END 2 */
 
   /* Init scheduler */
