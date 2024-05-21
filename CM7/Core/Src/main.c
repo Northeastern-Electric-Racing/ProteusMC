@@ -27,6 +27,7 @@
 #include "proteus_config.h"
 #include "gatedriver.h"
 #include "ssi_encoder.h"
+#include "amp_common.h"
 
 /* USER CODE END Includes */
 
@@ -74,7 +75,7 @@ osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal3,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
 
@@ -132,8 +133,6 @@ int main(void)
 /* USER CODE END Boot_Mode_Sequence_1 */
   /* MCU Configuration--------------------------------------------------------*/
 
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_All, 0);
-
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
@@ -184,7 +183,7 @@ int main(void)
   MX_TIM8_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-
+  MX_OPENAMP_Init(RPMSG_REMOTE, amp_bind_cb);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -1147,7 +1146,7 @@ void StartDefaultTask(void *argument)
   for (;;)
   {
     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-    osDelay(500);
+    osDelay(250);
   }
   /* USER CODE END 5 */
 }
