@@ -130,7 +130,7 @@ int _write(int file, char *ptr, int len)
   return len;
 }
 
-int i = 0;
+float phase_currents[3];
 
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
   //foc_data_t adc_data = {
@@ -144,10 +144,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
   //foc_queue_fr
   //printf("Address: %d\r\n", hadc);
   if (hadc == &hadc1) {
-    i+=1;
-  }
-  if (hadc == &hadc3) {
-    i+=2;
+    gatedrv_get_phase_currents(&gatedrv_left, phase_currents);
   }
 }
 /* USER CODE END 0 */
@@ -1261,15 +1258,19 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
   int curr_time = HAL_GetTick();
+  float duty_cycles[3] = {0.5, 0.5, 0.5};
+  gatedrv_write_pwm(&gatedrv_left, duty_cycles);
+  gatedrv_write_pwm(&gatedrv_right, duty_cycles);
   /* Infinite loop */
   for (;;)
   {
     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     osDelay(500);
-    float duty_cycles[3] = {0.5, 0.5, 0.5};
-    gatedrv_write_pwm(&gatedrv_left, duty_cycles);
-    gatedrv_write_pwm(&gatedrv_right, duty_cycles);
-    printf("Bruh %d, Time: %d\r\n", i, HAL_GetTick() - curr_time);
+    printf("U: %d A, V: %d A, W: %d A, Time: %d ms\r\n",
+           (uint32_t)(phase_currents[0] * 1000),
+           (uint32_t)(phase_currents[1] * 1000),
+           (uint32_t)(phase_currents[2] * 1000),
+           HAL_GetTick() - curr_time);
     curr_time = HAL_GetTick();
   }
   /* USER CODE END 5 */
