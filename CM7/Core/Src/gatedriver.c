@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include "main.h"
 
 #define  PERIOD_VALUE		(uint32_t)(2000 - 1)
 
@@ -73,9 +74,10 @@ void gatedrv_init(gatedriver_t *gatedriver, TIM_HandleTypeDef* tim, ADC_HandleTy
 /* Note: This has to atomically write to ALL PWM registers */
 void gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[GATEDRV_NUM_PHASES])
 {
-	drv->tim->Instance->CCR1 = (uint32_t) (duty_cycles[0] * PERIOD_VALUE);
-	drv->tim->Instance->CCR2 = (uint32_t) (duty_cycles[1] * PERIOD_VALUE);
-	drv->tim->Instance->CCR3 = (uint32_t) (duty_cycles[2] * PERIOD_VALUE);
+	// Not sure why a divide by 2 is necessary here but it is :)
+	drv->tim->Instance->CCR1 = (uint32_t) (duty_cycles[0] * PWM_PERIOD_CYCLES) / 2;
+	drv->tim->Instance->CCR2 = (uint32_t) (duty_cycles[1] * PWM_PERIOD_CYCLES) / 2;
+	drv->tim->Instance->CCR3 = (uint32_t) (duty_cycles[2] * PWM_PERIOD_CYCLES) / 2;
 }
 
 void gatedrv_get_phase_currents(gatedriver_t *drv, float phase_currents[3])

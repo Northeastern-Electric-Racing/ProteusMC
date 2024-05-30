@@ -60,12 +60,12 @@ void MX_FDCAN1_Init(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define PWM_PERIOD_CYCLES (ADV_TIM_CLK_MHz*1000000/PWM_FREQUENCY)&0xFFFE
+#define PWM_PERIOD_CYCLES (TIM_CLK_MHz*1000000/PWM_FREQUENCY)
 #define PWM_FREQUENCY 25000
 #define REGULATION_EXECUTION_RATE 1
 #define TIM_CLOCK_DIVIDER 1
 #define REP_COUNTER REGULATION_EXECUTION_RATE*2-1
-#define ADV_TIM_CLK_MHz 144
+#define TIM_CLK_MHz 64
 
 /* USER CODE BEGIN Private defines */
 

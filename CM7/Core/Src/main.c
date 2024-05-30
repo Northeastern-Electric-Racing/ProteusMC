@@ -315,7 +315,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_3;
   RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOMEDIUM;
-  RCC_OscInitStruct.PLL.PLLFRACN = 0;
+  RCC_OscInitStruct.PLL.PLLFRACN = 3072;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -353,12 +353,12 @@ void PeriphCommonClock_Config(void)
   PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC;
   PeriphClkInitStruct.PLL2.PLL2M = 4;
   PeriphClkInitStruct.PLL2.PLL2N = 9;
-  PeriphClkInitStruct.PLL2.PLL2P = 4;
+  PeriphClkInitStruct.PLL2.PLL2P = 2;
   PeriphClkInitStruct.PLL2.PLL2Q = 2;
   PeriphClkInitStruct.PLL2.PLL2R = 2;
   PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_3;
   PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOMEDIUM;
-  PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
+  PeriphClkInitStruct.PLL2.PLL2FRACN = 3072;
   PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
@@ -399,7 +399,7 @@ static void MX_ADC1_Init(void)
   /** Common config
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV2;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
@@ -905,7 +905,7 @@ static void MX_TIM1_Init(void)
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
   sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  sBreakDeadTimeConfig.DeadTime = 200;
+  sBreakDeadTimeConfig.DeadTime = 5;
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
   sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
   sBreakDeadTimeConfig.BreakFilter = 0;
@@ -1265,12 +1265,17 @@ void StartDefaultTask(void *argument)
   for (;;)
   {
     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-    osDelay(500);
-    printf("U: %d A, V: %d A, W: %d A, Time: %d ms\r\n",
-           (uint32_t)(phase_currents[0] * 1000),
-           (uint32_t)(phase_currents[1] * 1000),
-           (uint32_t)(phase_currents[2] * 1000),
+    osDelay(10);
+    printf("U: %ld A, V: %ld A, W: %ld A, Time: %ld ms\r\n",
+           (uint32_t)(duty_cycles[0] * 100),
+           (uint32_t)(duty_cycles[1] * 100),
+           (uint32_t)(duty_cycles[2] * 100),
            HAL_GetTick() - curr_time);
+    duty_cycles[0] = duty_cycles[0] + 0.001 >= 1.0 ? 0.0 : duty_cycles[0] + 0.001;
+    duty_cycles[1] = duty_cycles[1] + 0.001 >= 1.0 ? 0.0 : duty_cycles[1] + 0.001;
+    duty_cycles[2] = duty_cycles[2] + 0.001 >= 1.0 ? 0.0 : duty_cycles[2] + 0.001;
+    gatedrv_write_pwm(&gatedrv_left, duty_cycles);
+    gatedrv_write_pwm(&gatedrv_right, duty_cycles);
     curr_time = HAL_GetTick();
   }
   /* USER CODE END 5 */
