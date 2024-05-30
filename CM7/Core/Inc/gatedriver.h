@@ -31,7 +31,7 @@ typedef struct {
     TIM_OC_InitTypeDef pwm_cfg;
 	uint32_t pulses[GATEDRV_NUM_PHASES];
 
-    ADC_HandleTypeDef *hdma_adc;
+    ADC_HandleTypeDef* phase_adc;
 	SPI_HandleTypeDef *adc_spi;
     uint32_t intern_adc_buffer[GATEDRV_SIZE_OF_ADC_DMA];
 
@@ -39,10 +39,22 @@ typedef struct {
     osMutexAttr_t tim_mutex_attr;
     osMutexId_t* ext_adc_mutex;
     osMutexAttr_t ext_adc_mutex_attr;
+
+    int initial_reading_taken;
+    float channel_offsets[3];
 } gatedriver_t;
 
 /* initialize a new gatedriver */
-gatedriver_t* gatedrv_init(TIM_HandleTypeDef* tim, ADC_HandleTypeDef *hdma_adc, SPI_HandleTypeDef *adc_spi);
+void gatedrv_init(gatedriver_t *gatedriver, TIM_HandleTypeDef* tim, ADC_HandleTypeDef *phase_adc);
+
+/* Note: This has to atomically write to ALL PWM registers */
+void gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[]);
+
+/* read the internal IGBT temp */
+int16_t gatedrv_read_igbt_temp(gatedriver_t* drv);
+
+/* Read the phase currents */
+void gatedrv_get_phase_currents(gatedriver_t *drv, float phase_currents[3]);
 
 /* read the dc voltage (V) */
 int16_t gatedrv_read_dc_voltage(gatedriver_t* drv);
@@ -50,13 +62,7 @@ int16_t gatedrv_read_dc_voltage(gatedriver_t* drv);
 /* read the dc current (A) */
 int16_t gatedrv_read_dc_current(gatedriver_t* drv);
 
-/* Note: This has to atomically write to ALL PWM registers */
-int16_t gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[]);
-
 /* read the internal IGBT temp */
 int16_t gatedrv_read_igbt_temp(gatedriver_t* drv);
-
-/* read the currents of each phase */
-void gatedrv_get_phase_currents(gatedriver_t* drv, int16_t current_buf[GATEDRV_NUM_PHASES]);
 
 #endif /* GATEDRIVER_H */

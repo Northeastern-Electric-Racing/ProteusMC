@@ -53,8 +53,15 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void DebugMon_Handler(void);
 void SysTick_Handler(void);
-void DMA1_Stream0_IRQHandler(void);
-void DMA1_Stream2_IRQHandler(void);
+void ADC_IRQHandler(void);
+void TIM1_BRK_IRQHandler(void);
+void TIM1_UP_IRQHandler(void);
+void TIM1_TRG_COM_IRQHandler(void);
+void TIM8_BRK_TIM12_IRQHandler(void);
+void TIM8_UP_TIM13_IRQHandler(void);
+void TIM8_TRG_COM_TIM14_IRQHandler(void);
+void HSEM1_IRQHandler(void);
+void ADC3_IRQHandler(void);
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */
