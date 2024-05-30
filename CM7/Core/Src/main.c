@@ -1265,15 +1265,15 @@ void StartDefaultTask(void *argument)
   for (;;)
   {
     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-    osDelay(10);
+    osDelay(500);
     printf("U: %ld A, V: %ld A, W: %ld A, Time: %ld ms\r\n",
            (uint32_t)(duty_cycles[0] * 100),
            (uint32_t)(duty_cycles[1] * 100),
            (uint32_t)(duty_cycles[2] * 100),
            HAL_GetTick() - curr_time);
-    duty_cycles[0] = duty_cycles[0] + 0.001 >= 1.0 ? 0.0 : duty_cycles[0] + 0.001;
-    duty_cycles[1] = duty_cycles[1] + 0.001 >= 1.0 ? 0.0 : duty_cycles[1] + 0.001;
-    duty_cycles[2] = duty_cycles[2] + 0.001 >= 1.0 ? 0.0 : duty_cycles[2] + 0.001;
+    duty_cycles[0] = duty_cycles[0] + 0.01 >= 1.0 ? 0.0 : duty_cycles[0] + 0.01;
+    duty_cycles[1] = duty_cycles[1] + 0.01 >= 1.0 ? 0.0 : duty_cycles[1] + 0.01;
+    duty_cycles[2] = duty_cycles[2] + 0.01 >= 1.0 ? 0.0 : duty_cycles[2] + 0.01;
     gatedrv_write_pwm(&gatedrv_left, duty_cycles);
     gatedrv_write_pwm(&gatedrv_right, duty_cycles);
     curr_time = HAL_GetTick();
