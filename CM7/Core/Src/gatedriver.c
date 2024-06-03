@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "main.h"
+#include "foc_ctrl.h"
 
 #define  PERIOD_VALUE		(uint32_t)(2000 - 1)
 
@@ -27,15 +28,17 @@ static void gatedrv_fault_cb(gatedriver_t* drv)
 //                                            |                    |                |
 #define SAMPLE_TO_AMPS             ((3.3f / ADC_MAX_VALUE) * (1.0f / 1.53f) * (1.0f / 0.33f))
 
-void gatedrv_init(gatedriver_t *gatedriver, TIM_HandleTypeDef* tim, ADC_HandleTypeDef *phase_adc)
+void gatedrv_init(gatedriver_t *gatedriver, TIM_HandleTypeDef* tim, ADC_HandleTypeDef *phase_adc, foc_ctrl_t *controller)
 {
 	/* Assert hardware params */
 	assert(tim);
 	assert(phase_adc);
+	assert(controller);
 
 	/* Set interfaces */
 	gatedriver->tim			= tim;
 	gatedriver->phase_adc	= phase_adc;
+	gatedriver->controller	= controller;
 
 	/* Common configuration for all PWM channels */
 	TIM_OC_InitTypeDef channel_config = {
@@ -105,4 +108,28 @@ void gatedrv_get_phase_currents(gatedriver_t *drv, float phase_currents[3])
 int16_t gatedrv_read_igbt_temp(gatedriver_t* drv)
 {
 
+}
+
+const osThreadAttr_t phase_actor_attributes = {
+	.name = "Phase Actor",
+	.stack_size = 128 * 8,
+	.priority = (osPriority_t)osPriorityHigh,
+};
+
+void vPhaseActor(void *pv_params)
+{
+	osStatus_t status;
+
+	pwm_signal_t duty_cycles[3];
+
+	gatedriver_t *gatedriver = (gatedriver_t *)pv_params;
+	assert(gatedriver);
+
+	for (;;)
+	{
+		status = osMessageQueueGet(gatedriver->controller->command_queue, &duty_cycles, NULL, osWaitForever);
+		if (status == osOK) {
+			gatedrv_write_pwm(gatedriver, duty_cycles);
+		}
+	}
 }

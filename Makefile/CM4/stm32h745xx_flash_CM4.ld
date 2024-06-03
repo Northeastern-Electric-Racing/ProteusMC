@@ -45,6 +45,8 @@ MEMORY
 {
 FLASH (rx)      : ORIGIN = 0x08100000, LENGTH = 1024K
 RAM (xrw)      : ORIGIN = 0x10000000, LENGTH = 288K
+CM4_SHARED_MEM (xrw)     : ORIGIN = 0x38000000, LENGTH = 256
+CM7_SHARED_MEM (xrw)     : ORIGIN = 0x38000100, LENGTH = 256
 }
 
 /* Define output sections */
@@ -166,6 +168,24 @@ SECTIONS
   }
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
+
+  .CM4_SHARED_MEM (NOLOAD) :
+  {
+    . = ALIGN(4);
+    _shared_memory_start = .;
+    KEEP(*(.CM4_SHARED_MEM))
+    . = ALIGN(4);
+    _shared_memory_end = .;
+  } >CM4_SHARED_MEM
+
+  .CM7_SHARED_MEM (NOLOAD) :
+  {
+    . = ALIGN(4);
+    _shared_memory_start = .;
+    KEEP(*(.CM7_SHARED_MEM))
+    . = ALIGN(4);
+    _shared_memory_end = .;
+  } >CM7_SHARED_MEM
 }
 
 
