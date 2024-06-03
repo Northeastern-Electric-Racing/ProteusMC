@@ -5,7 +5,6 @@
 #include <string.h>
 
 #define PRINTF_QUEUE_SIZE 16  /* Strings */
-#define PRINTF_BUFFER_LEN 128 /* Characters */
 
 osMessageQueueId_t printf_queue;
 osThreadId_t serial_monitor_handle;

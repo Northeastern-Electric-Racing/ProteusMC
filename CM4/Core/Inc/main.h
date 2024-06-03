@@ -51,8 +51,8 @@ extern "C" {
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
-void MX_UART4_Init(void);
 void MX_CRC_Init(void);
+void MX_UART4_Init(void);
 
 /* USER CODE BEGIN EFP */
 

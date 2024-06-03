@@ -24,6 +24,8 @@
 #include "task.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "ipcc.h"
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,7 +45,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
+extern ipcc_t ipcc;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -192,6 +194,10 @@ void HSEM2_IRQHandler(void)
   /* USER CODE END HSEM2_IRQn 0 */
   HAL_HSEM_IRQHandler();
   /* USER CODE BEGIN HSEM2_IRQn 1 */
+
+  /* Attempt to receive a message if there is one */
+  ipcc_receive(&ipcc);
+  //printf("HSEM received!!!\r\n");
 
   /* USER CODE END HSEM2_IRQn 1 */
 }

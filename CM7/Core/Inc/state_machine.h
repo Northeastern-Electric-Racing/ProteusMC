@@ -2,23 +2,13 @@
 #define STATE_MACHINE_H
 
 #include "cmsis_os.h"
+#include "proteus_config.h"
 
-// TODO: add actual list of states
-typedef enum
-{
-    IDLE_START,
-    CHARGE_BOOT_CAP,
-    OFFSET_CALIB,
-    CLEAR,
-    START,
-    SWITCH_OVER,
-    START_RUN,
-    RUN,
-    ANY_STOP,
-    STOP_IDLE,
-    FAULT_NOW,
-    MAX_FUNC_STATES
-} state_t;
+typedef struct {
+    state_t current_state;
+    osMutexId_t* state_mutex;
+    osMutexAttr_t state_mutex_attr;
+} state_director_t;
 
 extern osThreadId_t sm_director_handle;
 extern const osThreadAttr_t sm_director_attributes;

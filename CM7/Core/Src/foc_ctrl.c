@@ -5,8 +5,9 @@
 #include <math.h>
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 
-#define INBOUND_QUEUE_SIZE 30
+#define INBOUND_QUEUE_SIZE 15
 #define OUTBOUND_QUEUE_SIZE 15
 
 /*
@@ -15,57 +16,37 @@
  */
 #define NUM_CURRENT_SENSORS     3
 #define CLARKE_ALPHA            1/3
-#define CLARKE_BETA             1/sqrt(3)
+#define CLARKE_BETA             1/sqrtf(3)
 
-#define OPEN_LOOP_MAX_AMPLITUDE	0.05	/* max duty cycle */
-#define OPEN_LOOP_RAMP_TIME		1		/* seconds */
+#define OPEN_LOOP_MAX_AMPLITUDE	0.7f	/* max duty cycle */
+#define OPEN_LOOP_RAMP_TIME		5.0		/* seconds */
+#define OPEN_LOOP_VELOCITY      1000
 
 enum {
 	D,
 	Q
 };
 
-foc_ctrl_t *foc_ctrl_init()
+void foc_ctrl_init(foc_ctrl_t *controller)
 {
-	/* Create FOC struct */
-	foc_ctrl_t *controller = malloc(sizeof(foc_ctrl_t));
-	assert(controller);
 	controller->data_queue = osMessageQueueNew(INBOUND_QUEUE_SIZE, sizeof(foc_data_t), NULL);
 	controller->command_queue = osMessageQueueNew(OUTBOUND_QUEUE_SIZE, sizeof(pwm_signal_t[3]), NULL);
 
 	/* Initialize Clarke Transform */
-	controller->clarke_transform = malloc(sizeof(CLARKE_Obj));
-	assert(controller->clarke_transform);
-	CLARKE_setNumSensors(controller->clarke_transform, NUM_CURRENT_SENSORS);
-	CLARKE_setScaleFactors(controller->clarke_transform, CLARKE_ALPHA, CLARKE_BETA);
+	CLARKE_setNumSensors(&controller->clarke_transform, NUM_CURRENT_SENSORS);
+	CLARKE_setScaleFactors(&controller->clarke_transform, CLARKE_ALPHA, CLARKE_BETA);
 
-	/* Initialize Park Transform */
-	controller->park_transform = malloc(sizeof(PARK_Obj));
-	assert(controller->park_transform);
+	/* Initialize PIDs */
+	PID_setGains(&controller->d_pid, 0.1, 0.1, 0);
+	PID_setMinMax(&controller->d_pid, 0.0, 1.0);
+	PID_init(&controller->d_pid, sizeof(controller->d_pid));
 
-	/* Initialize Inverse Park Transform */
-	controller->ipark_transform = malloc(sizeof(IPARK_Obj));
-	assert(controller->ipark_transform);
+	PID_setGains(&controller->q_pid, 0.1, 0.1, 0);
+	PID_setMinMax(&controller->q_pid, 0.0, 2.0);
+	PID_init(&controller->q_pid, sizeof(controller->q_pid));
 
-	/* Initialize Space Vector Modulation */
-	controller->svm = malloc(sizeof(SVGEN_Obj));
-	assert(controller->svm);
-
-	/* Iniitialize PIDs */
-	//TODO: Actually initialize values of PID
-	controller->d_pid = malloc(sizeof(PID_Obj));
-	assert(controller->d_pid);
-	//PID_setGains(controller->d_pid, kp, ki, kd);
-	//PID_setMinMax(controller->d_pid);
-
-	controller->q_pid = malloc(sizeof(PID_Obj));
-	assert(controller->q_pid);
-	//PID_setGains(controller->q_pid, kp, ki, kd);
-	//PID_setMinMax(controller->q_pid);
-
-	controller->last_run_ms = HAL_GetTick();
-
-	return controller;
+	//controller->last_run_us = us_timer_get();
+	controller->open_loop_ramp_velocity = 0.3;
 }
 
 osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *data)
@@ -84,29 +65,35 @@ osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, pwm_signal_t duty_cycles[3])
 	return osMessageQueueGet(controller->command_queue, duty_cycles, NULL, osWaitForever);
 }
 
-static void open_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
+static void open_loop_ctrl(foc_ctrl_t *controller, pwm_signal_t duty_cycles[3])
 {
 	/* Note: assuming we start from 0 angular velocity */
-	pwm_signal_t duty_cmds[3];
+	/* Assuming tick is set to 1 ms */
+	//uint32_t current_time_us = us_timer_get();
+	//uint32_t dt = (uint16_t) ((uint16_t) current_time_us - (uint16_t) controller->last_run_us);
+	uint32_t dt = 100;
 
-	if (msg->type == FOCDATA_ROTOR_POSITION) {
-		/* Assuming tick is set to 1 ms */
-		uint32_t dt = HAL_GetTick() - controller->last_run_ms;
+	/* Ramp amplitude */
+	controller->open_loop_amplitude += ((OPEN_LOOP_MAX_AMPLITUDE ) / OPEN_LOOP_RAMP_TIME) * (dt / 1000000.0);
 
-		/* Ramp amplitude */
-		controller->open_loop_amplitude += ((OPEN_LOOP_MAX_AMPLITUDE - 0) / OPEN_LOOP_RAMP_TIME) * dt;
+	/* Clamp signal */
+	if (controller->open_loop_amplitude > OPEN_LOOP_MAX_AMPLITUDE)
+		controller->open_loop_amplitude = OPEN_LOOP_MAX_AMPLITUDE;
 
-		/* Clamp signal */
-		if (controller->open_loop_amplitude > OPEN_LOOP_MAX_AMPLITUDE)
-			controller->open_loop_amplitude = OPEN_LOOP_MAX_AMPLITUDE;
+	/* Generate three-phase duty cycles */
+	duty_cycles[0] = controller->open_loop_amplitude * (sinf(controller->open_loop_ramp_position) + 1) / 2.0 * 10.0;
+	duty_cycles[1] = controller->open_loop_amplitude * (sinf(controller->open_loop_ramp_position - 2.0 * M_PI / 3.0) + 1.0) / 2 * 10.0;
+	duty_cycles[2] = controller->open_loop_amplitude * (sinf(controller->open_loop_ramp_position + 2.0 * M_PI / 3.0) + 1.0) / 2 * 10.0;
 
-		/* Generate three-phase duty cycles */
-		duty_cmds[0] = controller->open_loop_amplitude * sin(controller->rotor_position);
-		duty_cmds[1] = controller->open_loop_amplitude * sin(controller->rotor_position - 2 * M_PI / 3);
-		duty_cmds[2] = controller->open_loop_amplitude * sin(controller->rotor_position + 2 * M_PI / 3);
+	//controller->last_run_us = current_time_us;
+	if (controller->open_loop_ramp_velocity < OPEN_LOOP_VELOCITY)
+		controller->open_loop_ramp_velocity *= 1.003;
 
-		osMessageQueuePut(controller->command_queue, duty_cmds, 0U, 0U);
-	}
+	controller->open_loop_ramp_position += controller->open_loop_ramp_velocity * (dt / 1000000.0f);
+	//printf("U: %ld A, V: %ld A, W: %ld A\r\n",
+    //       (uint32_t)(duty_cycles[0] * 1000),
+    //       (uint32_t)(duty_cycles[1] * 1000),
+    //       (uint32_t)(duty_cycles[2] * 1000));
 }
 
 static void closed_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
@@ -170,12 +157,19 @@ static void closed_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
 	}
 }
 
+const osThreadAttr_t foc_ctrl_attributes = {
+	.name = "FOC Controller",
+	.stack_size = 128 * 8,
+	.priority = (osPriority_t)osPriorityLow,
+};
+
 void vFOCctrl(void *pv_params)
 {
 	osStatus_t status;
 
 	/* Source data for calculations */
 	foc_data_t msg;
+	pwm_signal_t duty_cycles[3];
 
 	foc_ctrl_t *controller = (foc_ctrl_t *)pv_params;
 	assert(controller);
@@ -188,7 +182,7 @@ void vFOCctrl(void *pv_params)
 			switch (get_state()) {
 				case START:
 					/* Open Loop Startup Procedure */
-					open_loop_ctrl(controller, &msg);
+					open_loop_ctrl(controller, duty_cycles);
 					controller->last_run_ms = HAL_GetTick();
 					break;
 				case START_RUN:
@@ -218,6 +212,8 @@ void vFOCctrl(void *pv_params)
 					/* Unknown State */
 					break;
 			}
+			open_loop_ctrl(controller, duty_cycles);
+			osMessageQueuePut(controller->command_queue, duty_cycles, 0U, 0U);
 		}
 
 		/* Yield to other tasks */

@@ -26,7 +26,10 @@
 #include "proteus_config.h"
 #include "gatedriver.h"
 #include "ssi_encoder.h"
+#include "foc_ctrl.h"
+#include "ipcc.h"
 #include <stdio.h>
+#include <assert.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -68,6 +71,8 @@ TIM_HandleTypeDef htim8;
 
 UART_HandleTypeDef huart4;
 
+DMA_HandleTypeDef hdma_memtomem_dma2_stream1;
+DMA_HandleTypeDef hdma_memtomem_dma2_stream2;
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
@@ -77,8 +82,13 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 
+ipcc_t ipcc;
+
 gatedriver_t gatedrv_left;
 gatedriver_t gatedrv_right;
+
+foc_ctrl_t ctrl_right;
+foc_ctrl_t ctrl_left;
 
 /* USER CODE END PV */
 
@@ -86,8 +96,7 @@ gatedriver_t gatedrv_right;
 void SystemClock_Config(void);
 void PeriphCommonClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_ADC3_Init(void);
-static void MX_SPI1_Init(void);
+static void MX_DMA_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_SPI3_Init(void);
 static void MX_SPI4_Init(void);
@@ -97,6 +106,8 @@ static void MX_TIM4_Init(void);
 static void MX_TIM8_Init(void);
 static void MX_CRC_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_ADC3_Init(void);
+static void MX_SPI1_Init(void);
 static void MX_UART4_Init(void);
 void StartDefaultTask(void *argument);
 
@@ -130,21 +141,17 @@ int _write(int file, char *ptr, int len)
   return len;
 }
 
-float phase_currents[3];
-
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
-  //foc_data_t adc_data = {
-  //  .type = FOCDATA_PHASE_CURRENT,
-  //  .payload.phase_currents = {
-  //    hadc->Instance->JDR1,
-  //    hadc->Instance->JDR2,
-  //    hadc->Instance->JDR3,
-  //  }
-  //};
-  //foc_queue_fr
-  //printf("Address: %d\r\n", hadc);
-  if (hadc == &hadc1) {
-    gatedrv_get_phase_currents(&gatedrv_left, phase_currents);
+  foc_data_t adc_data = {.type = FOCDATA_PHASE_CURRENT };
+
+  if (hadc == gatedrv_left.phase_adc) {
+    gatedrv_get_phase_currents(&gatedrv_left, adc_data.payload.phase_currents);
+    foc_queue_frame(&ctrl_left, &adc_data);
+  }
+
+  if (hadc == gatedrv_right.phase_adc) {
+    gatedrv_get_phase_currents(&gatedrv_left, adc_data.payload.phase_currents);
+    foc_queue_frame(&ctrl_right, &adc_data);
   }
 }
 /* USER CODE END 0 */
@@ -211,8 +218,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_ADC3_Init();
-  MX_SPI1_Init();
+  MX_DMA_Init();
   MX_SPI2_Init();
   MX_SPI3_Init();
   MX_SPI4_Init();
@@ -222,11 +228,15 @@ int main(void)
   MX_TIM8_Init();
   MX_CRC_Init();
   MX_ADC1_Init();
+  MX_ADC3_Init();
+  MX_SPI1_Init();
   MX_UART4_Init();
 
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
+
+  ipcc_init(&ipcc, &hdma_memtomem_dma2_stream1, 1, 2);
 
   /* USER CODE END 2 */
 
@@ -236,10 +246,15 @@ int main(void)
   /* USER CODE BEGIN RTOS_MUTEX */
   // lmao we aren't adding mutexes here but need to init stuff after the kernel initializes
   printf("Booting...\r\n");
-  gatedrv_init(&gatedrv_left, &htim1, &hadc1);
-  gatedrv_init(&gatedrv_right, &htim8, &hadc3);
+  foc_ctrl_init(&ctrl_left);
+  foc_ctrl_init(&ctrl_right);
+
+  gatedrv_init(&gatedrv_left, &htim1, &hadc1, &ctrl_left);
   //ssi_encoder_t *ssi_encoder_left = ssi_encoder_init(&hspi2);
+
+  gatedrv_init(&gatedrv_right, &htim8, &hadc3, &ctrl_right);
   //ssi_encoder_t *ssi_encoder_right = ssi_encoder_init(&hspi4);
+  printf("MC Initialized...\r\n");
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
@@ -259,11 +274,24 @@ int main(void)
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+  gatedrv_left.write_thread = osThreadNew(vPhaseActor, &gatedrv_left, &phase_actor_attributes);
+  assert(gatedrv_left.write_thread);
+
+  ctrl_left.thread = osThreadNew(vFOCctrl, &ctrl_left, &foc_ctrl_attributes);
+  assert(ctrl_left.thread);
+
+  gatedrv_right.write_thread = osThreadNew(vPhaseActor, &gatedrv_right, &phase_actor_attributes);
+  assert(gatedrv_right.write_thread);
+
+  ctrl_right.thread = osThreadNew(vFOCctrl, &ctrl_right, &foc_ctrl_attributes);
+  assert(ctrl_right.thread);
+
+  printf("Tasks Created...\r\n");
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
+  printf("Starting Kernel...\r\n");
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
@@ -905,7 +933,7 @@ static void MX_TIM1_Init(void)
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
   sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  sBreakDeadTimeConfig.DeadTime = 5;
+  sBreakDeadTimeConfig.DeadTime = 2;
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
   sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
   sBreakDeadTimeConfig.BreakFilter = 0;
@@ -1085,7 +1113,7 @@ static void MX_TIM8_Init(void)
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
   sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  sBreakDeadTimeConfig.DeadTime = 200;
+  sBreakDeadTimeConfig.DeadTime = 2;
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
   sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
   sBreakDeadTimeConfig.BreakFilter = 0;
@@ -1149,6 +1177,66 @@ static void MX_UART4_Init(void)
   /* USER CODE BEGIN UART4_Init 2 */
 
   /* USER CODE END UART4_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  * Configure DMA for memory to memory transfers
+  *   hdma_memtomem_dma2_stream1
+  *   hdma_memtomem_dma2_stream2
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* Configure DMA request hdma_memtomem_dma2_stream1 on DMA2_Stream1 */
+  hdma_memtomem_dma2_stream1.Instance = DMA2_Stream1;
+  hdma_memtomem_dma2_stream1.Init.Request = DMA_REQUEST_MEM2MEM;
+  hdma_memtomem_dma2_stream1.Init.Direction = DMA_MEMORY_TO_MEMORY;
+  hdma_memtomem_dma2_stream1.Init.PeriphInc = DMA_PINC_ENABLE;
+  hdma_memtomem_dma2_stream1.Init.MemInc = DMA_MINC_ENABLE;
+  hdma_memtomem_dma2_stream1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+  hdma_memtomem_dma2_stream1.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
+  hdma_memtomem_dma2_stream1.Init.Mode = DMA_NORMAL;
+  hdma_memtomem_dma2_stream1.Init.Priority = DMA_PRIORITY_LOW;
+  hdma_memtomem_dma2_stream1.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
+  hdma_memtomem_dma2_stream1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
+  hdma_memtomem_dma2_stream1.Init.MemBurst = DMA_MBURST_SINGLE;
+  hdma_memtomem_dma2_stream1.Init.PeriphBurst = DMA_PBURST_SINGLE;
+  if (HAL_DMA_Init(&hdma_memtomem_dma2_stream1) != HAL_OK)
+  {
+    Error_Handler( );
+  }
+
+  /* Configure DMA request hdma_memtomem_dma2_stream2 on DMA2_Stream2 */
+  hdma_memtomem_dma2_stream2.Instance = DMA2_Stream2;
+  hdma_memtomem_dma2_stream2.Init.Request = DMA_REQUEST_MEM2MEM;
+  hdma_memtomem_dma2_stream2.Init.Direction = DMA_MEMORY_TO_MEMORY;
+  hdma_memtomem_dma2_stream2.Init.PeriphInc = DMA_PINC_ENABLE;
+  hdma_memtomem_dma2_stream2.Init.MemInc = DMA_MINC_ENABLE;
+  hdma_memtomem_dma2_stream2.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+  hdma_memtomem_dma2_stream2.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
+  hdma_memtomem_dma2_stream2.Init.Mode = DMA_NORMAL;
+  hdma_memtomem_dma2_stream2.Init.Priority = DMA_PRIORITY_LOW;
+  hdma_memtomem_dma2_stream2.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
+  hdma_memtomem_dma2_stream2.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
+  hdma_memtomem_dma2_stream2.Init.MemBurst = DMA_MBURST_SINGLE;
+  hdma_memtomem_dma2_stream2.Init.PeriphBurst = DMA_PBURST_SINGLE;
+  if (HAL_DMA_Init(&hdma_memtomem_dma2_stream2) != HAL_OK)
+  {
+    Error_Handler( );
+  }
+
+  /* DMA interrupt init */
+  /* DMA2_Stream1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
+  /* DMA2_Stream2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
 
 }
 
@@ -1261,22 +1349,24 @@ void StartDefaultTask(void *argument)
   float duty_cycles[3] = {0.5, 0.5, 0.5};
   gatedrv_write_pwm(&gatedrv_left, duty_cycles);
   gatedrv_write_pwm(&gatedrv_right, duty_cycles);
+  ipcc_msg_t msg = {.id = IPCC_FAULT_ALERT, .msg.fault = 0};
   /* Infinite loop */
   for (;;)
   {
     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     osDelay(500);
-    printf("U: %ld A, V: %ld A, W: %ld A, Time: %ld ms\r\n",
-           (uint32_t)(duty_cycles[0] * 100),
-           (uint32_t)(duty_cycles[1] * 100),
-           (uint32_t)(duty_cycles[2] * 100),
-           HAL_GetTick() - curr_time);
+    //printf("U: %ld A, V: %ld A, W: %ld A, Time: %ld ms\r\n",
+    //       (uint32_t)(duty_cycles[0] * 100),
+    //       (uint32_t)(duty_cycles[1] * 100),
+    //       (uint32_t)(duty_cycles[2] * 100),
+    //       HAL_GetTick() - curr_time);
     duty_cycles[0] = duty_cycles[0] + 0.01 >= 1.0 ? 0.0 : duty_cycles[0] + 0.01;
     duty_cycles[1] = duty_cycles[1] + 0.01 >= 1.0 ? 0.0 : duty_cycles[1] + 0.01;
     duty_cycles[2] = duty_cycles[2] + 0.01 >= 1.0 ? 0.0 : duty_cycles[2] + 0.01;
     gatedrv_write_pwm(&gatedrv_left, duty_cycles);
     gatedrv_write_pwm(&gatedrv_right, duty_cycles);
     curr_time = HAL_GetTick();
+    //printf("Failure: %d\r\n", ipcc_transfer(&ipcc, &msg));
   }
   /* USER CODE END 5 */
 }

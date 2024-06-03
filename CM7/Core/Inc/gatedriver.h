@@ -4,6 +4,7 @@
 #include "cmsis_os.h"
 #include "stm32h7xx.h"
 #include "stm32h7xx_hal.h"
+#include "foc_ctrl.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -40,12 +41,18 @@ typedef struct {
     osMutexId_t* ext_adc_mutex;
     osMutexAttr_t ext_adc_mutex_attr;
 
+    osThreadId_t write_thread;
+    foc_ctrl_t *controller;
+
     int initial_reading_taken;
     float channel_offsets[3];
 } gatedriver_t;
 
+extern const osThreadAttr_t phase_actor_attributes;
+void vPhaseActor(void *pv_params);
+
 /* initialize a new gatedriver */
-void gatedrv_init(gatedriver_t *gatedriver, TIM_HandleTypeDef* tim, ADC_HandleTypeDef *phase_adc);
+void gatedrv_init(gatedriver_t *gatedriver, TIM_HandleTypeDef* tim, ADC_HandleTypeDef *phase_adc, foc_ctrl_t *controller);
 
 /* Note: This has to atomically write to ALL PWM registers */
 void gatedrv_write_pwm(gatedriver_t* drv, float duty_cycles[]);

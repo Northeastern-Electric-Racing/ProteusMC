@@ -9,6 +9,8 @@
 #include "svgen.h"
 #include "pid.h"
 
+typedef float pwm_signal_t;
+
 typedef struct {
 	enum {
 		FOCDATA_PHASE_CURRENT,
@@ -18,25 +20,26 @@ typedef struct {
 	} type;
 
 	union {
-		int16_t phase_currents[3];
+		float phase_currents[3];
 		float rotor_position;
 		float dc_bus_voltage;
 		float ref_current;
 	} payload;
 } foc_data_t;
 
-typedef float pwm_signal_t;
-
 /* Struct to contain parameters for field oriented control */
 typedef struct {
-	osThreadId_t foc_ctrl;
+	osThreadId_t thread;
 	osMessageQueueId_t data_queue;
 	osMessageQueueId_t command_queue;
 	float ref_current;
 	float dc_bus_voltage;
 	float rotor_position;
-	uint32_t last_run_ms;
 	float open_loop_amplitude;
+	float open_loop_ramp_position;
+	float open_loop_ramp_velocity;
+	float open_loop_ramp_jork;
+	uint32_t last_run_ms;
 
 	PID_Obj *q_pid;
 	PID_Obj *d_pid;
@@ -46,7 +49,7 @@ typedef struct {
 	SVGEN_Obj *svm;
 } foc_ctrl_t;
 
-foc_ctrl_t *foc_ctrl_init();
+void foc_ctrl_init(foc_ctrl_t *controller);
 
 /* Enqueue a single frame of controller observation */
 osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *phase_currents);
@@ -54,11 +57,7 @@ osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *phase_currents);
 /* Wait for a command to be sent from the controller */
 osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, pwm_signal_t duty_cycles[3]);
 
-const osThreadAttr_t foc_ctrl_attributes = {
-	.name = "FOC Controller",
-	.stack_size = 128 * 8,
-	.priority = (osPriority_t)osPriorityHigh3,
-};
+extern const osThreadAttr_t foc_ctrl_attributes;
 
 void vFOCctrl(void *pv_params);
 

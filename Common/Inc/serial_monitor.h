@@ -2,6 +2,7 @@
 #define SERIAL_MONITOR_H
 
 #include "cmsis_os.h"
+#include "proteus_config.h"
 
 /* Function to queue a message to be sent on the UART stream */
 int serial_print(const char *format, ...);

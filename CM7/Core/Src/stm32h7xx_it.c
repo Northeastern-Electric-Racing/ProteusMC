@@ -25,6 +25,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "ipcc.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,10 +61,12 @@
 /* External variables --------------------------------------------------------*/
 extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc3;
+extern DMA_HandleTypeDef hdma_memtomem_dma2_stream1;
+extern DMA_HandleTypeDef hdma_memtomem_dma2_stream2;
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim8;
 /* USER CODE BEGIN EV */
-
+extern ipcc_t ipcc;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -90,7 +93,7 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+  printf("\r\nHARD FAULT!\r\n");
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -105,7 +108,7 @@ void HardFault_Handler(void)
 void MemManage_Handler(void)
 {
   /* USER CODE BEGIN MemoryManagement_IRQn 0 */
-
+  printf("\r\nMEMORY MANAGEMENT FAULT!\r\n");
   /* USER CODE END MemoryManagement_IRQn 0 */
   while (1)
   {
@@ -120,7 +123,7 @@ void MemManage_Handler(void)
 void BusFault_Handler(void)
 {
   /* USER CODE BEGIN BusFault_IRQn 0 */
-
+  printf("\r\nBUS FAULT!\r\n");
   /* USER CODE END BusFault_IRQn 0 */
   while (1)
   {
@@ -135,7 +138,7 @@ void BusFault_Handler(void)
 void UsageFault_Handler(void)
 {
   /* USER CODE BEGIN UsageFault_IRQn 0 */
-
+  printf("\r\nUSAGE FAULT!\r\n");
   /* USER CODE END UsageFault_IRQn 0 */
   while (1)
   {
@@ -280,6 +283,40 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles DMA2 stream1 global interrupt.
+  */
+void DMA2_Stream1_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Stream1_IRQn 0 */
+
+  /* USER CODE END DMA2_Stream1_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_memtomem_dma2_stream1);
+  /* USER CODE BEGIN DMA2_Stream1_IRQn 1 */
+
+  /* DMA FROM CM7 to CM4, must signal */
+  ipcc_signal(&ipcc);
+
+  /* USER CODE END DMA2_Stream1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA2 stream2 global interrupt.
+  */
+void DMA2_Stream2_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Stream2_IRQn 0 */
+
+  /* USER CODE END DMA2_Stream2_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_memtomem_dma2_stream2);
+  /* USER CODE BEGIN DMA2_Stream2_IRQn 1 */
+
+  /* No need to get signal from other core, we already know when DMA is done */
+  ipcc_receive(&ipcc);
+
+  /* USER CODE END DMA2_Stream2_IRQn 1 */
+}
+
+/**
   * @brief This function handles HSEM1 global interrupt.
   */
 void HSEM1_IRQHandler(void)
@@ -289,7 +326,8 @@ void HSEM1_IRQHandler(void)
   /* USER CODE END HSEM1_IRQn 0 */
   HAL_HSEM_IRQHandler();
   /* USER CODE BEGIN HSEM1_IRQn 1 */
-
+  __HAL_HSEM_CLEAR_FLAG(__HAL_HSEM_GET_FLAG(0));
+  HAL_HSEM_Release(0, 0);
   /* USER CODE END HSEM1_IRQn 1 */
 }
 
