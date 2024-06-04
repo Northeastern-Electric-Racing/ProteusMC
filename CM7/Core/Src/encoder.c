@@ -85,7 +85,8 @@ void vEncoderObserver(void *pv_params)
 	for (;;)
 	{
         /* Retrieve SSI position */
-        encoder_get_angle_ssi(encoder, &ssi_position);
+        if (encoder_get_angle_ssi(encoder, &ssi_position));
+            continue;
 
         /* Fuse SSI position with incremental position */
         msg.payload.rotor_position = (ssi_position + encoder_get_angle_incr(encoder)) / 2;
