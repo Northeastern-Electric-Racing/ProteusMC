@@ -66,7 +66,7 @@ typedef struct {
 void foc_ctrl_init(foc_ctrl_t *controller);
 
 /* Enqueue a single frame of controller observation */
-osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *phase_currents);
+osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *data);
 
 /* Wait for a command to be sent from the controller */
 osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, pwm_signal_t duty_cycles[3]);

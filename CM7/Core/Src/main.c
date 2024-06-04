@@ -25,7 +25,7 @@
 
 #include "proteus_config.h"
 #include "gatedriver.h"
-#include "ssi_encoder.h"
+#include "encoder.h"
 #include "foc_ctrl.h"
 #include "ipcc.h"
 #include <stdio.h>
@@ -90,6 +90,9 @@ gatedriver_t gatedrv_right;
 
 foc_ctrl_t ctrl_right;
 foc_ctrl_t ctrl_left;
+
+encoder_t encoder_left;
+encoder_t encoder_right;
 
 /* USER CODE END PV */
 
@@ -254,10 +257,10 @@ int main(void)
   foc_ctrl_init(&ctrl_right);
 
   gatedrv_init(&gatedrv_left, &htim1, &hadc1, &ctrl_left);
-  //ssi_encoder_t *ssi_encoder_left = ssi_encoder_init(&hspi2);
+  encoder_init(&encoder_left, &htim2, &hspi2, &ctrl_left);
 
   gatedrv_init(&gatedrv_right, &htim8, &hadc3, &ctrl_right);
-  //ssi_encoder_t *ssi_encoder_right = ssi_encoder_init(&hspi4);
+  encoder_init(&encoder_right, &htim4, &hspi4, &ctrl_right);
   printf("MC Initialized...\r\n");
   /* USER CODE END RTOS_MUTEX */
 
@@ -284,11 +287,17 @@ int main(void)
   ctrl_left.thread = osThreadNew(vFOCctrl, &ctrl_left, &foc_ctrl_attributes);
   assert(ctrl_left.thread);
 
+  encoder_left.thread = osThreadNew(vEncoderObserver, &encoder_left, &encoder_observer_attributes);
+  assert(encoder_left.thread);
+
   gatedrv_right.write_thread = osThreadNew(vPhaseActor, &gatedrv_right, &phase_actor_attributes);
   assert(gatedrv_right.write_thread);
 
   ctrl_right.thread = osThreadNew(vFOCctrl, &ctrl_right, &foc_ctrl_attributes);
   assert(ctrl_right.thread);
+
+  encoder_right.thread = osThreadNew(vEncoderObserver, &encoder_right, &encoder_observer_attributes);
+  assert(encoder_right.thread);
 
   printf("Tasks Created...\r\n");
   /* USER CODE END RTOS_THREADS */
@@ -977,10 +986,10 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 0;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 4294967295;
+  htim2.Init.Period = 8191;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
@@ -1026,10 +1035,10 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 0;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 65535;
+  htim4.Init.Period = 8191;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
@@ -1397,11 +1406,11 @@ void StartDefaultTask(void *argument)
   {
     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     osDelay(500);
-    printf("U: %ld A, V: %ld A, W: %ld A, Time: %ld us\r\n",
-           (uint32_t)(duty_cycles[0] * 100),
-           (uint32_t)(duty_cycles[1] * 100),
-           (uint32_t)(duty_cycles[2] * 100),
-           us_timer_get() - curr_time);
+    //printf("U: %ld A, V: %ld A, W: %ld A, Time: %ld us\r\n",
+    //       (uint32_t)(duty_cycles[0] * 100),
+    //       (uint32_t)(duty_cycles[1] * 100),
+    //       (uint32_t)(duty_cycles[2] * 100),
+    //       us_timer_get() - curr_time);
     duty_cycles[0] = duty_cycles[0] + 0.01 >= 1.0 ? 0.0 : duty_cycles[0] + 0.01;
     duty_cycles[1] = duty_cycles[1] + 0.01 >= 1.0 ? 0.0 : duty_cycles[1] + 0.01;
     duty_cycles[2] = duty_cycles[2] + 0.01 >= 1.0 ? 0.0 : duty_cycles[2] + 0.01;
