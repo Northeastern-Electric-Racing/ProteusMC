@@ -255,7 +255,6 @@ static inline float
 FILTER_FO_run(FILTER_FO_Handle handle, const float inputValue)
 {
     FILTER_FO_Obj *obj = (FILTER_FO_Obj *)handle;
-
     float a1 = obj->a1;
     float b0 = obj->b0;
     float b1 = obj->b1;
