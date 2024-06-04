@@ -29,8 +29,10 @@ enum {
 	Q
 };
 
-void foc_ctrl_init(foc_ctrl_t *controller)
+void foc_ctrl_init(foc_ctrl_t *controller, state_machine_t *sm)
 {
+	assert(sm);
+
 	controller->data_queue = osMessageQueueNew(INBOUND_QUEUE_SIZE, sizeof(foc_data_t), NULL);
 	controller->command_queue = osMessageQueueNew(OUTBOUND_QUEUE_SIZE, sizeof(pwm_signal_t[3]), NULL);
 
@@ -49,6 +51,8 @@ void foc_ctrl_init(foc_ctrl_t *controller)
 
 	controller->last_run_us = us_timer_get();
 	controller->open_loop_ramp_velocity = 0.3;
+
+	controller->sm = sm;
 }
 
 osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *data)
@@ -185,7 +189,7 @@ void vFOCctrl(void *pv_params)
 		/* Wait until a message is in the queue, send messages when they are in the queue */
 		status = osMessageQueueGet(controller->data_queue, &msg, NULL, osWaitForever);
 		if (status == osOK) {
-			switch (get_state()) {
+			switch (state_machine_get_state(controller->sm)) {
 				case START:
 					/* Open Loop Startup Procedure */
 					open_loop_ctrl(controller);
@@ -199,6 +203,8 @@ void vFOCctrl(void *pv_params)
 					closed_loop_ctrl(controller, &msg);
 					break;
 				case LV_BOOT:
+					state_machine_queue_state(controller->sm, START);
+					break;
 				case CHARGE_BOOT_CAP:
 				case OFFSET_CALIB:
 				case CLEAR:
@@ -219,7 +225,7 @@ void vFOCctrl(void *pv_params)
 			}
 			//uint32_t first_time = us_timer_get();
 			//closed_loop_ctrl(controller, &msg);
-			open_loop_ctrl(controller);
+			//open_loop_ctrl(controller);
 			//printf("Time us:%ld\r\n", us_timer_get() - first_time);
 		}
 

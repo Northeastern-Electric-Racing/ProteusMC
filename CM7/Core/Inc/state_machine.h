@@ -8,17 +8,21 @@ typedef struct {
     state_t current_state;
     osMutexId_t* state_mutex;
     osMutexAttr_t state_mutex_attr;
-} state_director_t;
+    osMessageQueueId_t state_trans_queue;
+    osThreadId_t thread;
+} state_machine_t;
 
-extern osThreadId_t sm_director_handle;
 extern const osThreadAttr_t sm_director_attributes;
 
-void vStateMachineDirector(void *pv_params);
+/* Initialize a State Machine */
+void state_machine_init(state_machine_t *sm);
 
 /* Adds a functional state transition to be processed */
-int queue_state(state_t new_state);
+int state_machine_queue_state(state_machine_t *sm, state_t new_state);
 
 /* Retrieves the current functional state */
-state_t get_state();
+state_t state_machine_get_state(state_machine_t *sm);
+
+void vStateMachineDirector(void *pv_params);
 
 #endif

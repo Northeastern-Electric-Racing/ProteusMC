@@ -28,6 +28,7 @@
 #include "ssi_encoder.h"
 #include "foc_ctrl.h"
 #include "ipcc.h"
+#include "state_machine.h"
 #include <stdio.h>
 #include <assert.h>
 /* USER CODE END Includes */
@@ -83,13 +84,18 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 
+/* Struct for intercore comms */
 ipcc_t ipcc;
 
+/* Control params for left motor */
+state_machine_t sm_left;
 gatedriver_t gatedrv_left;
-gatedriver_t gatedrv_right;
-
-foc_ctrl_t ctrl_right;
 foc_ctrl_t ctrl_left;
+
+/* Control params for right motor */
+state_machine_t sm_right;
+gatedriver_t gatedrv_right;
+foc_ctrl_t ctrl_right;
 
 /* USER CODE END PV */
 
@@ -250,14 +256,19 @@ int main(void)
   /* USER CODE BEGIN RTOS_MUTEX */
   // lmao we aren't adding mutexes here but need to init stuff after the kernel initializes
   printf("Booting...\r\n");
-  foc_ctrl_init(&ctrl_left);
-  foc_ctrl_init(&ctrl_right);
+
+  state_machine_init(&sm_left);
+  state_machine_init(&sm_right);
+
+  foc_ctrl_init(&ctrl_left, &sm_left);
+  foc_ctrl_init(&ctrl_right, &sm_right);
 
   gatedrv_init(&gatedrv_left, &htim1, &hadc1, &ctrl_left);
-  //ssi_encoder_t *ssi_encoder_left = ssi_encoder_init(&hspi2);
-
   gatedrv_init(&gatedrv_right, &htim8, &hadc3, &ctrl_right);
+
+  //ssi_encoder_t *ssi_encoder_left = ssi_encoder_init(&hspi2);
   //ssi_encoder_t *ssi_encoder_right = ssi_encoder_init(&hspi4);
+
   printf("MC Initialized...\r\n");
   /* USER CODE END RTOS_MUTEX */
 
@@ -278,17 +289,21 @@ int main(void)
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
+  /* Initialize Left Motor Threads */
   gatedrv_left.write_thread = osThreadNew(vPhaseActor, &gatedrv_left, &phase_actor_attributes);
   assert(gatedrv_left.write_thread);
-
   ctrl_left.thread = osThreadNew(vFOCctrl, &ctrl_left, &foc_ctrl_attributes);
   assert(ctrl_left.thread);
+  sm_left.thread = osThreadNew(vStateMachineDirector, &sm_left, &sm_director_attributes);
+  assert(sm_left.thread);
 
+  /* Initialize Right Motor Threads */
   gatedrv_right.write_thread = osThreadNew(vPhaseActor, &gatedrv_right, &phase_actor_attributes);
   assert(gatedrv_right.write_thread);
-
   ctrl_right.thread = osThreadNew(vFOCctrl, &ctrl_right, &foc_ctrl_attributes);
   assert(ctrl_right.thread);
+  sm_right.thread = osThreadNew(vStateMachineDirector, &sm_right, &sm_director_attributes);
+  assert(sm_right.thread);
 
   printf("Tasks Created...\r\n");
   /* USER CODE END RTOS_THREADS */
@@ -1388,25 +1403,13 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
   int curr_time = us_timer_get();
-  float duty_cycles[3] = {0.5, 0.5, 0.5};
-  gatedrv_write_pwm(&gatedrv_left, duty_cycles);
-  gatedrv_write_pwm(&gatedrv_right, duty_cycles);
   ipcc_msg_t msg = {.id = IPCC_FAULT_ALERT, .msg.fault = 0};
   /* Infinite loop */
   for (;;)
   {
     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     osDelay(500);
-    printf("U: %ld A, V: %ld A, W: %ld A, Time: %ld us\r\n",
-           (uint32_t)(duty_cycles[0] * 100),
-           (uint32_t)(duty_cycles[1] * 100),
-           (uint32_t)(duty_cycles[2] * 100),
-           us_timer_get() - curr_time);
-    duty_cycles[0] = duty_cycles[0] + 0.01 >= 1.0 ? 0.0 : duty_cycles[0] + 0.01;
-    duty_cycles[1] = duty_cycles[1] + 0.01 >= 1.0 ? 0.0 : duty_cycles[1] + 0.01;
-    duty_cycles[2] = duty_cycles[2] + 0.01 >= 1.0 ? 0.0 : duty_cycles[2] + 0.01;
-    gatedrv_write_pwm(&gatedrv_left, duty_cycles);
-    gatedrv_write_pwm(&gatedrv_right, duty_cycles);
+    //printf("Time: %ld us\r\n", us_timer_get() - curr_time);
     curr_time = us_timer_get();
     //printf("Failure: %d\r\n", ipcc_transfer(&ipcc, &msg));
   }

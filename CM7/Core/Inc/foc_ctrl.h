@@ -8,6 +8,7 @@
 #include "ipark.h"
 #include "svgen.h"
 #include "pid.h"
+#include "state_machine.h"
 
 typedef enum {
     SECTOR_1 = 0,
@@ -61,9 +62,11 @@ typedef struct {
 	PARK_Obj park_transform;
 	IPARK_Obj ipark_transform;
 	SVGEN_Obj svm;
+
+	state_machine_t *sm;
 } foc_ctrl_t;
 
-void foc_ctrl_init(foc_ctrl_t *controller);
+void foc_ctrl_init(foc_ctrl_t *controller, state_machine_t *sm);
 
 /* Enqueue a single frame of controller observation */
 osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *phase_currents);
