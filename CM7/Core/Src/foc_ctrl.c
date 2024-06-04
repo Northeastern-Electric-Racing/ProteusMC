@@ -1,6 +1,8 @@
 #include "foc_ctrl.h"
 #include "proteus_config.h"
 #include "state_machine.h"
+#include "stm32h7xx_hal.h"
+#include "us_timer.h"
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
@@ -45,7 +47,7 @@ void foc_ctrl_init(foc_ctrl_t *controller)
 	PID_setMinMax(&controller->q_pid, 0.0, 2.0);
 	PID_init(&controller->q_pid, sizeof(controller->q_pid));
 
-	//controller->last_run_us = us_timer_get();
+	controller->last_run_us = us_timer_get();
 	controller->open_loop_ramp_velocity = 0.3;
 }
 
@@ -65,13 +67,16 @@ osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, pwm_signal_t duty_cycles[3])
 	return osMessageQueueGet(controller->command_queue, duty_cycles, NULL, osWaitForever);
 }
 
-static void open_loop_ctrl(foc_ctrl_t *controller, pwm_signal_t duty_cycles[3])
+static void open_loop_ctrl(foc_ctrl_t *controller)
 {
+	pwm_signal_t duty_cycles[3];
+
 	/* Note: assuming we start from 0 angular velocity */
-	/* Assuming tick is set to 1 ms */
-	//uint32_t current_time_us = us_timer_get();
-	//uint32_t dt = (uint16_t) ((uint16_t) current_time_us - (uint16_t) controller->last_run_us);
-	uint32_t dt = 100;
+	uint32_t current_time_us = us_timer_get();
+	uint32_t dt = (uint32_t) ((uint32_t)current_time_us - (uint32_t) controller->last_run_us);
+	if ((int32_t)dt < 0) dt = 180; /* Account for wrap around of timer */
+
+	//printf("Time us: %ld\r\n", dt);
 
 	/* Ramp amplitude */
 	controller->open_loop_amplitude += ((OPEN_LOOP_MAX_AMPLITUDE ) / OPEN_LOOP_RAMP_TIME) * (dt / 1000000.0);
@@ -85,7 +90,7 @@ static void open_loop_ctrl(foc_ctrl_t *controller, pwm_signal_t duty_cycles[3])
 	duty_cycles[1] = controller->open_loop_amplitude * (sinf(controller->open_loop_ramp_position - 2.0 * M_PI / 3.0) + 1.0) / 2 * 10.0;
 	duty_cycles[2] = controller->open_loop_amplitude * (sinf(controller->open_loop_ramp_position + 2.0 * M_PI / 3.0) + 1.0) / 2 * 10.0;
 
-	//controller->last_run_us = current_time_us;
+	controller->last_run_us = current_time_us;
 	if (controller->open_loop_ramp_velocity < OPEN_LOOP_VELOCITY)
 		controller->open_loop_ramp_velocity *= 1.003;
 
@@ -94,6 +99,7 @@ static void open_loop_ctrl(foc_ctrl_t *controller, pwm_signal_t duty_cycles[3])
     //       (uint32_t)(duty_cycles[0] * 1000),
     //       (uint32_t)(duty_cycles[1] * 1000),
     //       (uint32_t)(duty_cycles[2] * 1000));
+	osMessageQueuePut(controller->command_queue, duty_cycles, 0U, 0U);
 }
 
 static void closed_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
@@ -112,18 +118,18 @@ static void closed_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
 		/* If its a phase current measurement, run control pipeline */
 		case FOCDATA_PHASE_CURRENT:
 			//TODO: Convert raw ADC reading of phases to current values
-			CLARKE_run(controller->clarke_transform, msg->payload.phase_currents, alpha_beta);
-			PARK_run(controller->park_transform, alpha_beta, id_iq);
+			CLARKE_run(&controller->clarke_transform, msg->payload.phase_currents, alpha_beta);
+			PARK_run(&controller->park_transform, alpha_beta, id_iq);
 
 			/*
 			* Here, adjust I_q based on the desired current, reference for I_d is always 0
 			* I_q is actually being varied
 			*/
-			PID_run_parallel(controller->q_pid, 0, id_iq[D], 0, &id_iq_pid[D]);
-			PID_run_parallel(controller->d_pid, controller->ref_current, id_iq[Q], 0, &id_iq_pid[Q]);
+			PID_run_parallel(&controller->q_pid, 0, id_iq[D], 0, &id_iq_pid[D]);
+			PID_run_parallel(&controller->d_pid, controller->ref_current, id_iq[Q], 0, &id_iq_pid[Q]);
 
-			IPARK_run(controller->ipark_transform, id_iq, alpha_beta);
-			SVGEN_run(controller->svm, alpha_beta, v_abc_pu);
+			IPARK_run(&controller->ipark_transform, id_iq, alpha_beta);
+			SVGEN_run(&controller->svm, alpha_beta, v_abc_pu);
 
 			calc_cmd[0] = (v_abc_pu[0] + 1.0) / 2.0;
 			calc_cmd[1] = (v_abc_pu[1] + 1.0) / 2.0;
@@ -135,14 +141,14 @@ static void closed_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
 
 		/* If its a new rotor position, update Park and Inverse Park Transforms */
 		case FOCDATA_ROTOR_POSITION:
-			PARK_setup(controller->park_transform, msg->payload.rotor_position);
-			IPARK_setup(controller->ipark_transform, msg->payload.rotor_position);
+			PARK_setup(&controller->park_transform, msg->payload.rotor_position);
+			IPARK_setup(&controller->ipark_transform, msg->payload.rotor_position);
 			controller->rotor_position = msg->payload.rotor_position;
 			break;
 
 		/* If its a new DC bus voltage reading, update the Space Vector Modulation block */
 		case FOCDATA_DC_BUS_VOLTAGE:
-			SVGEN_setup(controller->svm, 1/msg->payload.dc_bus_voltage);
+			SVGEN_setup(&controller->svm, 1/msg->payload.dc_bus_voltage);
 			controller->dc_bus_voltage = msg->payload.dc_bus_voltage;
 			break;
 
@@ -182,8 +188,7 @@ void vFOCctrl(void *pv_params)
 			switch (get_state()) {
 				case START:
 					/* Open Loop Startup Procedure */
-					open_loop_ctrl(controller, duty_cycles);
-					controller->last_run_ms = HAL_GetTick();
+					open_loop_ctrl(controller);
 					break;
 				case START_RUN:
 					/* Ensure ready to begin closed loop control */
@@ -201,7 +206,7 @@ void vFOCctrl(void *pv_params)
 				case FAULTED:
 					/* Do Nothing, Ensure signals are safe */
 					controller->open_loop_amplitude = 0.0;
-					controller->last_run_ms = HAL_GetTick();
+					controller->last_run_us = us_timer_get();
 					//TODO: this
 					break;
 				case STOP_NOW:
@@ -212,8 +217,10 @@ void vFOCctrl(void *pv_params)
 					/* Unknown State */
 					break;
 			}
-			open_loop_ctrl(controller, duty_cycles);
-			osMessageQueuePut(controller->command_queue, duty_cycles, 0U, 0U);
+			//uint32_t first_time = us_timer_get();
+			//closed_loop_ctrl(controller, &msg);
+			open_loop_ctrl(controller);
+			//printf("Time us:%ld\r\n", us_timer_get() - first_time);
 		}
 
 		/* Yield to other tasks */

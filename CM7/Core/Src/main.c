@@ -67,6 +67,7 @@ SPI_HandleTypeDef hspi4;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim8;
 
 UART_HandleTypeDef huart4;
@@ -109,6 +110,7 @@ static void MX_ADC1_Init(void);
 static void MX_ADC3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_UART4_Init(void);
+static void MX_TIM6_Init(void);
 void StartDefaultTask(void *argument);
 
 static void MX_NVIC_Init(void);
@@ -231,12 +233,14 @@ int main(void)
   MX_ADC3_Init();
   MX_SPI1_Init();
   MX_UART4_Init();
+  MX_TIM6_Init();
 
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
 
   ipcc_init(&ipcc, &hdma_memtomem_dma2_stream1, 1, 2);
+  us_timer_init(&htim6);
 
   /* USER CODE END 2 */
 
@@ -933,7 +937,7 @@ static void MX_TIM1_Init(void)
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
   sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  sBreakDeadTimeConfig.DeadTime = 2;
+  sBreakDeadTimeConfig.DeadTime = 0;
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
   sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
   sBreakDeadTimeConfig.BreakFilter = 0;
@@ -1051,6 +1055,44 @@ static void MX_TIM4_Init(void)
 }
 
 /**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 480;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 65535;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
   * @brief TIM8 Initialization Function
   * @param None
   * @retval None
@@ -1113,7 +1155,7 @@ static void MX_TIM8_Init(void)
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
   sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  sBreakDeadTimeConfig.DeadTime = 2;
+  sBreakDeadTimeConfig.DeadTime = 0;
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
   sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
   sBreakDeadTimeConfig.BreakFilter = 0;
@@ -1345,7 +1387,7 @@ static void MX_GPIO_Init(void)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-  int curr_time = HAL_GetTick();
+  int curr_time = us_timer_get();
   float duty_cycles[3] = {0.5, 0.5, 0.5};
   gatedrv_write_pwm(&gatedrv_left, duty_cycles);
   gatedrv_write_pwm(&gatedrv_right, duty_cycles);
@@ -1355,17 +1397,17 @@ void StartDefaultTask(void *argument)
   {
     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     osDelay(500);
-    //printf("U: %ld A, V: %ld A, W: %ld A, Time: %ld ms\r\n",
-    //       (uint32_t)(duty_cycles[0] * 100),
-    //       (uint32_t)(duty_cycles[1] * 100),
-    //       (uint32_t)(duty_cycles[2] * 100),
-    //       HAL_GetTick() - curr_time);
+    printf("U: %ld A, V: %ld A, W: %ld A, Time: %ld us\r\n",
+           (uint32_t)(duty_cycles[0] * 100),
+           (uint32_t)(duty_cycles[1] * 100),
+           (uint32_t)(duty_cycles[2] * 100),
+           us_timer_get() - curr_time);
     duty_cycles[0] = duty_cycles[0] + 0.01 >= 1.0 ? 0.0 : duty_cycles[0] + 0.01;
     duty_cycles[1] = duty_cycles[1] + 0.01 >= 1.0 ? 0.0 : duty_cycles[1] + 0.01;
     duty_cycles[2] = duty_cycles[2] + 0.01 >= 1.0 ? 0.0 : duty_cycles[2] + 0.01;
     gatedrv_write_pwm(&gatedrv_left, duty_cycles);
     gatedrv_write_pwm(&gatedrv_right, duty_cycles);
-    curr_time = HAL_GetTick();
+    curr_time = us_timer_get();
     //printf("Failure: %d\r\n", ipcc_transfer(&ipcc, &msg));
   }
   /* USER CODE END 5 */
