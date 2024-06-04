@@ -166,6 +166,7 @@ static void closed_loop_ctrl(foc_ctrl_t *controller, foc_data_t *msg)
 const osThreadAttr_t foc_ctrl_attributes = {
 	.name = "FOC Controller",
 	.stack_size = 128 * 8,
+	/* Note this task's priority is low since it happens so frequently, allows other, less frequent tasks to go */
 	.priority = (osPriority_t)osPriorityLow,
 };
 
