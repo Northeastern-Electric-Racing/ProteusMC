@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 typedef struct ssi_encoder {
-    SPI_HandleTypeDef *hspi;
+	SPI_HandleTypeDef *hspi;
 } ssi_encoder_t;
 
 /**

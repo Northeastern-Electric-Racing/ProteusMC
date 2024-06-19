@@ -5,9 +5,9 @@
 #include "proteus_config.h"
 
 typedef struct {
-    state_t current_state;
-    osMutexId_t* state_mutex;
-    osMutexAttr_t state_mutex_attr;
+	state_t current_state;
+	osMutexId_t *state_mutex;
+	osMutexAttr_t state_mutex_attr;
 } state_director_t;
 
 extern osThreadId_t sm_director_handle;

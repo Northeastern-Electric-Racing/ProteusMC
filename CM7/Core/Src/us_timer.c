@@ -7,12 +7,12 @@ static TIM_HandleTypeDef *timer;
 
 void us_timer_init(TIM_HandleTypeDef *htim)
 {
-    timer = htim;
-    HAL_TIM_Base_Start(timer);
+	timer = htim;
+	HAL_TIM_Base_Start(timer);
 }
 
 uint32_t us_timer_get()
 {
-    // the count is prescaled in CubeMX to increment once per microsecond, so the count corresponds to microseconds
-    return timer->Instance->CNT / 2;
+	// the count is prescaled in CubeMX to increment once per microsecond, so the count corresponds to microseconds
+	return timer->Instance->CNT / 2;
 }
