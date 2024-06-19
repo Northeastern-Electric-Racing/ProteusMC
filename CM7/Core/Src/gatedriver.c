@@ -16,9 +16,7 @@ static void gatedrv_reset_cb(gatedriver_t *drv)
 {
 }
 
-static void gatedrv_fault_cb(gatedriver_t *drv)
-{
-}
+static void gatedrv_fault_cb(gatedriver_t *drv){}
 
 #define ADC_MAX_VALUE (0xFFFF)
 //                             (Scale ADC sample to voltage)  (Divide gain)  (V/R, R=0.33ohms)
