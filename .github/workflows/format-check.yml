@@ -11,6 +11,7 @@ jobs:
         path:
           - check: 'CM4/Core'
           - check: 'CM7/Core'
+          - check: 'Common'
     steps:
     - uses: actions/checkout@v4
       with:
@@ -21,7 +22,5 @@ jobs:
         clang-format-version: '18'
         # only check core, embedded base covered internally
         check-path: ${{ matrix.path['check'] }}
-        # massive regex to exclude anything CubeMX generated, could require tweaking.  Uses posix extended
-        exclude-regex: "/stm32.*|main.(c|h)|freertos.*|FreeRTOS.*|sys.*|(system|startup)_stm32.*/ig"
         # use the clang-format from embedded base
         format-filepath: "./Drivers/Embedded-Base/clang-format"
