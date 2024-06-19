@@ -10,12 +10,12 @@
 #include "pid.h"
 
 typedef enum {
-    SECTOR_1 = 0,
-    SECTOR_2,
-    SECTOR_3,
-    SECTOR_4,
-    SECTOR_5,
-    SECTOR_6,
+	SECTOR_1 = 0,
+	SECTOR_2,
+	SECTOR_3,
+	SECTOR_4,
+	SECTOR_5,
+	SECTOR_6,
 } sector_t;
 
 typedef enum {
@@ -69,7 +69,8 @@ void foc_ctrl_init(foc_ctrl_t *controller);
 osStatus_t foc_queue_frame(foc_ctrl_t *controller, foc_data_t *phase_currents);
 
 /* Wait for a command to be sent from the controller */
-osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller, pwm_signal_t duty_cycles[3]);
+osStatus_t foc_retrieve_cmd(foc_ctrl_t *controller,
+			    pwm_signal_t duty_cycles[3]);
 
 extern const osThreadAttr_t foc_ctrl_attributes;
 
